@@ -6,33 +6,172 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Adam Sisk</title>
-  <link rel="icon" href="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/apple/198/male-technologist_1f468-200d-1f4bb.png">
+  <link rel="icon"
+    href="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/apple/198/male-technologist_1f468-200d-1f4bb.png">
   <link href="https://fonts.googleapis.com/css?family=Montserrat:200,400,800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
 
 </head>
 
 <body>
-  <div class="landing flex-column">
+  <div class="landing">
 
     <header class="header">
-      <h1>hi my name is <strong>Adam Sisk</strong></h1>
-      <div class="desc">
-        <p class="">I'm a full-stack software developer</p>
-        <!-- <p class="">These are some little things I've learned</p> -->
-      </div>
+      <h1 class="title"><span>hi my name is </span><strong>Adam Sisk</strong></h1>
+      <!-- <div class="desc"> -->
+      <div class="desc">I'm a full-stack software developer</div>
+      <!-- <p class="">These are some little things I've learned</p> -->
+      <!-- </div> -->
     </header>
     <nav class="nav">
-      <ul class="list flex-row">
+      <ul class="list">
         <li class="link"><a href="mailto:adamsisk91@gmail.com?subject=Hi%20Adam">say hi</a></li>
         <li class="link"><a href="./assets/ADAMSISKRESUME.pdf">resume</a></li>
         <li class="link icon"><a href="https://www.linkedin.com/in/adamsisk/">LinkedIn</a></li>
         <li class="link icon"><a href="https://github.com/CalamityAdam/flts-frontend">GitHub</a></li>
       </ul>
     </nav>
+    <div class="about">
+      <img 
+        src="./assets/adam-headshot.jpg"
+        width=600
+        height=auto
+        alt="adam sisk"
+      >
+    </div>
   </div>
   <style>
+    .landing {
+      display: grid;
+      gap: 1rem;
+      grid-template-rows: 1fr 50px 5fr;
+      grid-template-columns: 1fr auto 1fr;
+      grid-template-areas:
+        ". title ."
+        ". links ."
+        ". about .";
+      /* grid-template-columns: auto; */
+    }
 
+    .header {
+      display: grid;
+      gap: 0.5rem;
+      grid-template-rows: 100px 50px;
+      align-items: center;
+      justify-content: center;
+      /* border: 2px solid pink; */
+      grid-column: 2 / 3
+    }
+
+
+    .header strong {
+      display: inline-block;
+    }
+
+    .header span {
+      display: inline-block;
+    }
+
+    @media (max-width: 600px) {
+      .landing {
+        grid-template-rows: 2fr auto 1fr;
+        grid-template-columns: 1fr;
+        grid-template-areas:
+        "title"
+        "about"
+        "links";
+      }
+      .header {
+        justify-content: start;
+        grid-column: 1;
+      }
+      .header strong {
+        margin-left: 10px;
+      }
+      .header span {
+        margin-left: 10px;
+      }
+      .header .desc {
+        margin-left: 10px;
+      }
+      .about img {
+        width: 300px;
+      }
+    }
+
+    .header .title {
+      /* border-radius: 5px; */
+      font-weight: 400;
+      color: var(--black);
+      text-transform: uppercase;
+      grid-template-rows: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .header .desc {
+      justify-content: center;
+      text-align: center;
+      align-items: center;
+      /* border-bottom: 2px solid var(--red); */
+    }
+
+    .nav {
+      grid-area: links;
+    }
+    
+    .list {
+      justify-content: center;
+      align-items: center;
+      display: grid;
+      grid-template-columns:repeat(4, 1fr);
+      /* gap: 20px; */
+      grid-column: 2 / 3;
+    }
+
+    .list .link {
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .item {
+      display: grid;
+      justify-content: center;
+      align-items: center;
+      border: 5px solid var(--black);
+      border-radius: 3px;
+    }
+
+    .nav ul {
+      list-style-type: none;
+    }
+
+    .nav li {
+      display: inline-block;
+    }
+
+    .nav a {
+      color: var(--green);
+      text-decoration: underline;
+      text-transform: uppercase;
+    }
+    
+    .about {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      grid-area: about;
+    }
+    
+    .about img {
+      border-radius: 50%;
+      transition: all 0.4s;
+      /* transition-timing-function: cubic-bezier(0.65, 0.05, 0.54, 1.4); */
+    }
+    
+    .about img:hover {
+      border-radius: 8px;
+    }
   </style>
   <script src="./index.js"></script>
 </body>
