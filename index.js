@@ -1,3 +1,1 @@
-const aboutImg = document.querySelector('.about>img')
-
-// aboutImg.addEventListener('')
+console.log('hi! 👋 Ramsey Solutions is hiring passionate developers https://www.ramseyinhouse.com/')
