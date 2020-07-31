@@ -14,6 +14,10 @@ html {
   color: var(--black);
 }
 
+a {
+  color: var(--black);
+}
+
 *,
 *:before,
 *:after {
