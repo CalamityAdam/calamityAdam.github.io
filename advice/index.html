@@ -23,7 +23,7 @@
       const [sortBy, setSortBy] = React.useState('newest');
 
       React.useEffect(() => {
-        fetch('./assets/advice-questions-feb-24-2025.json')
+        fetch('../assets/advice-questions-feb-24-2025.json')
           .then(response => response.json())
           .then(data => {
             setQuestions(data);
