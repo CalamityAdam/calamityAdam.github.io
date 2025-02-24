@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advice Questions</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    function App() {
+      const [questions, setQuestions] = React.useState([]);
+      const [searchTerm, setSearchTerm] = React.useState('');
+      const [selectedTopic, setSelectedTopic] = React.useState('');
+      const [topics, setTopics] = React.useState([]);
+      const [sortBy, setSortBy] = React.useState('newest');
+
+      React.useEffect(() => {
+        fetch('./assets/advice-questions-feb-24-2025.json')
+          .then(response => response.json())
+          .then(data => {
+            setQuestions(data);
+            const uniqueTopics = [...new Set(data.map(q => q.tag_title))];
+            setTopics(uniqueTopics);
+          })
+          .catch(error => console.error('Error loading questions:', error));
+      }, []);
+
+      function getQuestionUrl(externalKey) {
+        return `https://ramseysolutions.com/advice/question/${externalKey}`;
+      }
+
+      const filteredQuestions = questions
+        .filter(q => {
+          const matchesSearch = q.question_body.toLowerCase().includes(searchTerm.toLowerCase());
+          const matchesTopic = !selectedTopic || q.tag_title === selectedTopic;
+          return matchesSearch && matchesTopic;
+        })
+        .sort((a, b) => {
+          switch (sortBy) {
+            case 'newest':
+              return new Date(b.question_created_at) - new Date(a.question_created_at);
+            case 'oldest':
+              return new Date(a.question_created_at) - new Date(b.question_created_at);
+            case 'replies':
+              return b.reply_count - a.reply_count;
+            case 'views':
+              return b.view_count - a.view_count;
+            default:
+              return 0;
+          }
+        });
+
+      return (
+        <div className="p-4">
+          <h1 className="text-2xl mb-4">Advice Questions</h1>
+          <p className="mb-4">number of questions: {filteredQuestions.length}</p>
+          <div className="mb-4">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Search questions..."
+              className="border p-2 mr-2"
+            />
+
+            <select
+              value={selectedTopic}
+              onChange={e => setSelectedTopic(e.target.value)}
+              className="border p-2"
+            >
+              <option value="">All Topics</option>
+              {topics.map(topic => (
+                <option key={topic} value={topic}>{topic}</option>
+              ))}
+            </select>
+
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              className="border p-2 ml-2"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="replies">Most Replies</option>
+              <option value="views">Most Views</option>
+            </select>
+          </div>
+
+          {filteredQuestions.map(q => (
+            <div key={q.question_external_key} className="mb-4 p-4 border">
+              <div className="flex items-center gap-2 text-sm">
+                <h3 className="text-gray-600">{q.tag_title}</h3>
+                <p className="text-gray-300">|</p>
+                <h2 className="flex items-center"><a href={getQuestionUrl(q.question_external_key)} className="text-blue-600">advice.com/question/{q.question_external_key}</a></h2>
+                <p className="text-gray-300">|</p>
+                <p className="text-gray-600">{q.reply_count} replies</p>
+                <p className="text-gray-300">|</p>
+                <p className="text-gray-600">{q.view_count} views</p>
+                <p className="text-gray-300">|</p>
+                <p className="text-gray-600">{new Date(q.question_created_at).toLocaleString()}</p>
+              </div>
+              <p className="mt-2">{q.question_body}</p>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+
+</html>
