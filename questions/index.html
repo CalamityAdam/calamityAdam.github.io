@@ -83,6 +83,34 @@
             transform: rotate(-90deg);
         }
 
+        .export-button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-left: 1rem;
+        }
+
+        .export-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .export-button:active {
+            transform: translateY(0);
+        }
+
+        .export-success {
+            background: rgba(72, 187, 120, 0.2) !important;
+            border-color: rgba(72, 187, 120, 0.5) !important;
+        }
+
         .conversation-id {
             font-family: 'Monaco', 'Consolas', monospace;
             font-size: 0.9rem;
@@ -377,6 +405,66 @@ Example:
             return formatted;
         }
 
+        function exportConversationAsMarkdown(chatSession, conversationIndex) {
+            const sessionId = chatSession.chat_session_id;
+            const messages = chatSession.conversation;
+            
+            let markdown = `# Conversation ${conversationIndex + 1}\n\n`;
+            markdown += `**Session ID:** \`${sessionId}\`\n\n`;
+            markdown += `**Messages:** ${messages.length}\n\n`;
+            markdown += `---\n\n`;
+            
+            messages.forEach((message, messageIndex) => {
+                const workflow = message.workflow || 'unknown';
+                const question = message.question || 'No question provided';
+                const response = message.response || 'No response content';
+                
+                markdown += `## Message ${messageIndex + 1} [${workflow.toUpperCase()}]\n\n`;
+                markdown += `### ❓ Question\n\n`;
+                markdown += `${question}\n\n`;
+                markdown += `### ✅ Response\n\n`;
+                
+                // Clean up the response text for markdown
+                let cleanResponse = response
+                    .replace(/\*\*(.+?)\*\*/g, '**$1**')  // Keep bold formatting
+                    .replace(/^- /gm, '- ')               // Keep bullet points
+                    .replace(/^## /gm, '### ')            // Convert h2 to h3
+                    .replace(/^# /gm, '## ')              // Convert h1 to h2
+                    .replace(/\{\{([^}]+)\}\}/g, '🔧 **Tool:** $1'); // Format tool placeholders
+                
+                markdown += `${cleanResponse}\n\n`;
+                markdown += `---\n\n`;
+            });
+            
+            return markdown;
+        }
+
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                try {
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    return true;
+                } catch (err) {
+                    document.body.removeChild(textArea);
+                    return false;
+                }
+            }
+        }
+
         function renderConversations(conversationData) {
             const container = document.getElementById('conversationsContainer');
             container.innerHTML = '';
@@ -393,7 +481,10 @@ Example:
                             <span>Conversation ${index + 1}</span>
                             <span class="toggle-icon">▼</span>
                         </div>
-                        <span class="message-count">${chatSession.conversation.length} messages</span>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span class="message-count">${chatSession.conversation.length} messages</span>
+                            <button class="export-button" data-conversation-index="${index}">📋 Export</button>
+                        </div>
                     </div>
                     <div class="conversation-id">ID: ${chatSession.chat_session_id}</div>
                 `;
@@ -418,7 +509,7 @@ Example:
                     
                     messageDiv.innerHTML = `
                         <div class="message-header">
-                            <span class="workflow-tag ${workflowClass}">workflow: ${workflow}</span>
+                            <span class="workflow-tag ${workflowClass}">${workflow}</span>
                         </div>
                         
                         <div class="question">
@@ -439,7 +530,12 @@ Example:
                 container.appendChild(conversationGroup);
 
                 // Add click handler for toggle functionality
-                header.addEventListener('click', function() {
+                header.addEventListener('click', function(e) {
+                    // Don't toggle if export button was clicked
+                    if (e.target.classList.contains('export-button')) {
+                        return;
+                    }
+                    
                     const content = contentContainer;
                     const icon = header.querySelector('.toggle-icon');
                     
@@ -451,6 +547,35 @@ Example:
                         content.classList.add('collapsed');
                         content.style.maxHeight = '0px';
                         icon.classList.add('collapsed');
+                    }
+                });
+
+                // Add export button functionality
+                const exportButton = header.querySelector('.export-button');
+                exportButton.addEventListener('click', async function(e) {
+                    e.stopPropagation(); // Prevent toggling when export is clicked
+                    
+                    const markdown = exportConversationAsMarkdown(chatSession, index);
+                    const success = await copyToClipboard(markdown);
+                    
+                    if (success) {
+                        // Show success feedback
+                        exportButton.classList.add('export-success');
+                        const originalText = exportButton.textContent;
+                        exportButton.textContent = '✅ Copied!';
+                        
+                        setTimeout(() => {
+                            exportButton.classList.remove('export-success');
+                            exportButton.textContent = originalText;
+                        }, 2000);
+                    } else {
+                        // Show error feedback
+                        const originalText = exportButton.textContent;
+                        exportButton.textContent = '❌ Failed';
+                        
+                        setTimeout(() => {
+                            exportButton.textContent = originalText;
+                        }, 2000);
                     }
                 });
             });
