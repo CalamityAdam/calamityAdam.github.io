@@ -19,86 +19,125 @@
         }
 
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
+            display: flex;
+            height: 100vh;
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 3rem;
+        .sidebar {
+            width: 350px;
+            background: #f8fafc;
+            border-right: 1px solid #e2e8f0;
+            overflow-y: auto;
+            flex-shrink: 0;
         }
 
-        .header h1 {
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            background: white;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.5rem;
             color: #1a202c;
-            font-size: 2.5rem;
             margin-bottom: 0.5rem;
         }
 
-        .header p {
+        .sidebar-header p {
             color: #718096;
-            font-size: 1.1rem;
+            font-size: 0.9rem;
         }
 
-        .conversation-group {
+        .conversation-list {
+            padding: 1rem;
+        }
+
+        .conversation-item {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-            overflow: hidden;
-        }
-
-        .conversation-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1.5rem;
-            font-weight: 600;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
             cursor: pointer;
-            user-select: none;
-            transition: background 0.2s ease;
+            transition: all 0.2s ease;
         }
 
-        .conversation-header:hover {
-            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        .conversation-item:hover {
+            border-color: #cbd5e0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .conversation-content {
-            transition: max-height 0.3s ease, opacity 0.3s ease;
-            overflow: hidden;
+        .conversation-item.selected {
+            border-color: #667eea;
+            background: #f7faff;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
         }
 
-        .conversation-content.collapsed {
-            max-height: 0;
-            opacity: 0;
+        .conversation-preview {
+            font-size: 0.9rem;
+            color: #2d3748;
+            line-height: 1.4;
+            margin-bottom: 0.5rem;
         }
 
-        .toggle-icon {
-            display: inline-block;
-            transition: transform 0.3s ease;
-            margin-left: 0.5rem;
-            font-size: 1.2rem;
+        .conversation-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: #718096;
         }
 
-        .toggle-icon.collapsed {
-            transform: rotate(-90deg);
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            background: #f5f7fa;
         }
+
+        .main-header {
+            background: white;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .conversation-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .conversation-details {
+            padding: 2rem;
+        }
+
+        .load-data-section {
+            padding: 2rem;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+
 
         .export-button {
-            background: rgba(255, 255, 255, 0.2);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: none;
             border-radius: 6px;
             padding: 0.5rem 1rem;
             font-size: 0.8rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
-            margin-left: 1rem;
         }
 
         .export-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            border-color: rgba(255, 255, 255, 0.5);
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
             transform: translateY(-1px);
         }
 
@@ -111,11 +150,7 @@
             border-color: rgba(72, 187, 120, 0.5) !important;
         }
 
-        .conversation-id {
-            font-family: 'Monaco', 'Consolas', monospace;
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
+
 
         .message {
             padding: 1.5rem;
@@ -258,13 +293,7 @@
             font-weight: 600;
         }
 
-        .message-count {
-            font-size: 0.9rem;
-            color: white;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-        }
+
 
         .load-data-section {
             background: white;
@@ -317,11 +346,44 @@
 
         @media (max-width: 768px) {
             .container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            
+            .sidebar-header h1 {
+                font-size: 1.25rem;
+            }
+            
+            .load-data-section {
                 padding: 1rem;
             }
             
-            .header h1 {
-                font-size: 2rem;
+            .json-input {
+                min-height: 150px;
+            }
+            
+            .conversation-list {
+                max-height: 300px;
+                overflow-y: auto;
+            }
+            
+            .main-content {
+                min-height: 50vh;
+            }
+            
+            .main-header {
+                padding: 1rem;
+            }
+            
+            .conversation-details {
+                padding: 1rem;
             }
             
             .message {
@@ -332,37 +394,43 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>Conversation History Visualizer</h1>
-            <p>Explore your chat conversations with rich formatting and workflow tags</p>
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>Conversations</h1>
+                <p>Select a conversation to view details</p>
+            </div>
+            
+            <div class="load-data-section">
+                <h2>Load Data</h2>
+                <p>Paste your conversation JSON data below and click "Load" to visualize it.</p>
+                <textarea 
+                    id="jsonInput" 
+                    class="json-input" 
+                    placeholder="Paste your conversation JSON data here..."></textarea>
+                <button id="loadButton" class="load-button">Load Conversations</button>
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+            </div>
+            
+            <div class="conversation-list" id="conversationList">
+                <!-- Conversation items will be populated here -->
+            </div>
         </div>
 
-        <div class="load-data-section">
-            <h2>Load Conversation Data</h2>
-            <p>Paste your conversation JSON data below and click "Load Conversations" to visualize it.</p>
-            <textarea 
-                id="jsonInput" 
-                class="json-input" 
-                placeholder="Paste your conversation JSON data here...
-Example:
-[
-  {
-    &quot;chat_session_id&quot;: &quot;0198c7a9-ea40-7462-b557-2bfa9c209b06&quot;,
-    &quot;conversation&quot;: [
-      {
-        &quot;id&quot;: &quot;0198c7a9-ea6d-72c5-83a8-ceab6ac5720b&quot;,
-        &quot;question&quot;: &quot;Your question here&quot;,
-        &quot;response&quot;: &quot;Your response here&quot;,
-        &quot;workflow&quot;: &quot;general&quot;
-      }
-    ]
-  }
-]"></textarea>
-            <button id="loadButton" class="load-button">Load Conversations</button>
-            <div id="errorMessage" class="error-message" style="display: none;"></div>
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="main-header" id="mainHeader" style="display: none;">
+                <div class="conversation-title" id="conversationTitle"></div>
+                <button class="export-button" id="exportButton" style="display: none;">📋 Export</button>
+            </div>
+            
+            <div class="conversation-details" id="conversationDetails">
+                <div style="text-align: center; color: #718096; padding: 3rem;">
+                    <h2>Select a conversation from the sidebar to view details</h2>
+                    <p>Load your conversation data first, then click on any conversation to explore it.</p>
+                </div>
+            </div>
         </div>
-
-        <div id="conversationsContainer"></div>
     </div>
 
     <script>
@@ -465,120 +533,152 @@ Example:
             }
         }
 
-        function renderConversations(conversationData) {
-            const container = document.getElementById('conversationsContainer');
-            container.innerHTML = '';
+        let conversationData = [];
+        let selectedConversationIndex = -1;
 
-            conversationData.forEach((chatSession, index) => {
-                const conversationGroup = document.createElement('div');
-                conversationGroup.className = 'conversation-group';
+        function truncateText(text, wordLimit = 30) {
+            if (!text || typeof text !== 'string') return 'No question available';
+            const words = text.split(' ');
+            if (words.length <= wordLimit) return text;
+            return words.slice(0, wordLimit).join(' ') + '...';
+        }
 
-                const header = document.createElement('div');
-                header.className = 'conversation-header';
-                header.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="display: flex; align-items: center;">
-                            <span>Conversation ${index + 1}</span>
-                            <span class="toggle-icon">▼</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <span class="message-count">${chatSession.conversation.length} messages</span>
-                            <button class="export-button" data-conversation-index="${index}">📋 Export</button>
-                        </div>
+        function generateConversationPreview(chatSession) {
+            const firstMessage = chatSession.conversation[0];
+            if (!firstMessage || !firstMessage.question) {
+                return 'No question available';
+            }
+            return truncateText(firstMessage.question, 30);
+        }
+
+        function renderConversationList(data) {
+            const conversationList = document.getElementById('conversationList');
+            conversationList.innerHTML = '';
+
+            data.forEach((chatSession, index) => {
+                const conversationItem = document.createElement('div');
+                conversationItem.className = 'conversation-item';
+                conversationItem.dataset.index = index;
+
+                const preview = generateConversationPreview(chatSession);
+                const messageCount = chatSession.conversation.length;
+
+                conversationItem.innerHTML = `
+                    <div class="conversation-preview">${preview}</div>
+                    <div class="conversation-meta">
+                        <span>${messageCount} message${messageCount !== 1 ? 's' : ''}</span>
+                        <span>Conversation ${index + 1}</span>
                     </div>
-                    <div class="conversation-id">ID: ${chatSession.chat_session_id}</div>
                 `;
-                conversationGroup.appendChild(header);
 
-                // Create content container
-                const contentContainer = document.createElement('div');
-                contentContainer.className = 'conversation-content';
-                contentContainer.id = `conversation-content-${index}`;
-
-                chatSession.conversation.forEach((message, messageIndex) => {
-                    const messageDiv = document.createElement('div');
-                    messageDiv.className = 'message';
-
-                    // Handle missing or invalid workflow
-                    const workflow = message.workflow || 'unknown';
-                    const workflowClass = `workflow-${workflow}`;
-                    
-                    // Handle missing question or response
-                    const question = message.question || 'No question provided';
-                    const response = formatResponse(message.response);
-                    
-                    messageDiv.innerHTML = `
-                        <div class="message-header">
-                            <span class="workflow-tag ${workflowClass}">${workflow}</span>
-                        </div>
-                        
-                        <div class="question">
-                            <div class="question-label">Question</div>
-                            <div class="question-text">${question}</div>
-                        </div>
-                        
-                        <div class="response">
-                            <div class="response-label">Response</div>
-                            <div class="response-content">${response}</div>
-                        </div>
-                    `;
-
-                    contentContainer.appendChild(messageDiv);
+                conversationItem.addEventListener('click', () => {
+                    selectConversation(index);
                 });
 
-                conversationGroup.appendChild(contentContainer);
-                container.appendChild(conversationGroup);
-
-                // Add click handler for toggle functionality
-                header.addEventListener('click', function(e) {
-                    // Don't toggle if export button was clicked
-                    if (e.target.classList.contains('export-button')) {
-                        return;
-                    }
-                    
-                    const content = contentContainer;
-                    const icon = header.querySelector('.toggle-icon');
-                    
-                    if (content.classList.contains('collapsed')) {
-                        content.classList.remove('collapsed');
-                        content.style.maxHeight = content.scrollHeight + 'px';
-                        icon.classList.remove('collapsed');
-                    } else {
-                        content.classList.add('collapsed');
-                        content.style.maxHeight = '0px';
-                        icon.classList.add('collapsed');
-                    }
-                });
-
-                // Add export button functionality
-                const exportButton = header.querySelector('.export-button');
-                exportButton.addEventListener('click', async function(e) {
-                    e.stopPropagation(); // Prevent toggling when export is clicked
-                    
-                    const markdown = exportConversationAsMarkdown(chatSession, index);
-                    const success = await copyToClipboard(markdown);
-                    
-                    if (success) {
-                        // Show success feedback
-                        exportButton.classList.add('export-success');
-                        const originalText = exportButton.textContent;
-                        exportButton.textContent = '✅ Copied!';
-                        
-                        setTimeout(() => {
-                            exportButton.classList.remove('export-success');
-                            exportButton.textContent = originalText;
-                        }, 2000);
-                    } else {
-                        // Show error feedback
-                        const originalText = exportButton.textContent;
-                        exportButton.textContent = '❌ Failed';
-                        
-                        setTimeout(() => {
-                            exportButton.textContent = originalText;
-                        }, 2000);
-                    }
-                });
+                conversationList.appendChild(conversationItem);
             });
+        }
+
+        function selectConversation(index) {
+            // Update selected state in sidebar
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            const selectedItem = document.querySelector(`[data-index="${index}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('selected');
+            }
+
+            selectedConversationIndex = index;
+            renderConversationDetails(conversationData[index], index);
+        }
+
+        function renderConversationDetails(chatSession, index) {
+            const mainHeader = document.getElementById('mainHeader');
+            const conversationTitle = document.getElementById('conversationTitle');
+            const exportButton = document.getElementById('exportButton');
+            const conversationDetails = document.getElementById('conversationDetails');
+
+            // Show header and export button
+            mainHeader.style.display = 'flex';
+            exportButton.style.display = 'block';
+
+            // Set title
+            conversationTitle.textContent = `Conversation ${index + 1} (${chatSession.conversation.length} messages)`;
+
+            // Clear previous content
+            conversationDetails.innerHTML = '';
+
+            // Add conversation ID
+            const idSection = document.createElement('div');
+            idSection.style.cssText = 'background: white; padding: 1rem 2rem; border-bottom: 1px solid #e2e8f0; font-family: Monaco, Consolas, monospace; font-size: 0.9rem; color: #718096;';
+            idSection.innerHTML = `<strong>Session ID:</strong> ${chatSession.chat_session_id}`;
+            conversationDetails.appendChild(idSection);
+
+            // Render messages
+            chatSession.conversation.forEach((message, messageIndex) => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+                messageDiv.style.cssText = 'background: white; margin-bottom: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
+
+                const workflow = message.workflow || 'unknown';
+                const workflowClass = `workflow-${workflow}`;
+                const question = message.question || 'No question provided';
+                const response = formatResponse(message.response);
+
+                messageDiv.innerHTML = `
+                    <div class="message-header">
+                        <span class="workflow-tag ${workflowClass}">${workflow}</span>
+                    </div>
+                    
+                    <div class="question">
+                        <div class="question-label">Question</div>
+                        <div class="question-text">${question}</div>
+                    </div>
+                    
+                    <div class="response">
+                        <div class="response-label">Response</div>
+                        <div class="response-content">${response}</div>
+                    </div>
+                `;
+
+                conversationDetails.appendChild(messageDiv);
+            });
+
+            // Update export button click handler
+            exportButton.onclick = async function() {
+                const markdown = exportConversationAsMarkdown(chatSession, index);
+                const success = await copyToClipboard(markdown);
+                
+                if (success) {
+                    exportButton.classList.add('export-success');
+                    const originalText = exportButton.textContent;
+                    exportButton.textContent = '✅ Copied!';
+                    
+                    setTimeout(() => {
+                        exportButton.classList.remove('export-success');
+                        exportButton.textContent = originalText;
+                    }, 2000);
+                } else {
+                    const originalText = exportButton.textContent;
+                    exportButton.textContent = '❌ Failed';
+                    
+                    setTimeout(() => {
+                        exportButton.textContent = originalText;
+                    }, 2000);
+                }
+            };
+        }
+
+        function renderConversations(data) {
+            conversationData = data;
+            renderConversationList(data);
+            
+            // Auto-select first conversation if available
+            if (data.length > 0) {
+                selectConversation(0);
+            }
         }
 
         function loadConversations() {
