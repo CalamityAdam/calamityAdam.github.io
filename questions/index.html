@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversation History Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #2d3748;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            color: #1a202c;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        .conversation-group {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .conversation-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s ease;
+        }
+
+        .conversation-header:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+
+        .conversation-content {
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            overflow: hidden;
+        }
+
+        .conversation-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+        }
+
+        .toggle-icon {
+            display: inline-block;
+            transition: transform 0.3s ease;
+            margin-left: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .conversation-id {
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .message {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .message:last-child {
+            border-bottom: none;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .workflow-tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .workflow-general {
+            background: #e6fffa;
+            color: #234e52;
+            border: 1px solid #81e6d9;
+        }
+
+        .workflow-budgeting {
+            background: #fef5e7;
+            color: #744210;
+            border: 1px solid #f6ad55;
+        }
+
+        .workflow-unknown {
+            background: #f7fafc;
+            color: #4a5568;
+            border: 1px solid #cbd5e0;
+        }
+
+        .question {
+            background: #f7fafc;
+            border-left: 4px solid #4299e1;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .question-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #4299e1;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .question-text {
+            font-size: 1rem;
+            color: #2d3748;
+            font-weight: 500;
+        }
+
+        .response {
+            background: #f9f9f9;
+            border-left: 4px solid #48bb78;
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .response-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #48bb78;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .response-content {
+            color: #2d3748;
+        }
+
+        .response-content h1,
+        .response-content h2,
+        .response-content h3 {
+            color: #1a202c;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .response-content h1 {
+            font-size: 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+
+        .response-content h2 {
+            font-size: 1.25rem;
+            color: #2b6cb0;
+        }
+
+        .response-content h3 {
+            font-size: 1.1rem;
+        }
+
+        .response-content ul,
+        .response-content ol {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .response-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        .response-content p {
+            margin-bottom: 1rem;
+        }
+
+        .response-content strong,
+        .response-content **strong** {
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .tool-placeholder {
+            background: #fef5e7;
+            border: 2px dashed #f6ad55;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            text-align: center;
+            color: #744210;
+            font-weight: 600;
+        }
+
+        .message-count {
+            font-size: 0.9rem;
+            color: white;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+        }
+
+        .load-data-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .load-data-section h2 {
+            margin-bottom: 1rem;
+            color: #1a202c;
+        }
+
+        .json-input {
+            width: 100%;
+            min-height: 200px;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+        }
+
+        .load-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: transform 0.2s;
+        }
+
+        .load-button:hover {
+            transform: translateY(-1px);
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .message {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Conversation History Visualizer</h1>
+            <p>Explore your chat conversations with rich formatting and workflow tags</p>
+        </div>
+
+        <div class="load-data-section">
+            <h2>Load Conversation Data</h2>
+            <p>Paste your conversation JSON data below and click "Load Conversations" to visualize it.</p>
+            <textarea 
+                id="jsonInput" 
+                class="json-input" 
+                placeholder="Paste your conversation JSON data here...
+Example:
+[
+  {
+    &quot;chat_session_id&quot;: &quot;0198c7a9-ea40-7462-b557-2bfa9c209b06&quot;,
+    &quot;conversation&quot;: [
+      {
+        &quot;id&quot;: &quot;0198c7a9-ea6d-72c5-83a8-ceab6ac5720b&quot;,
+        &quot;question&quot;: &quot;Your question here&quot;,
+        &quot;response&quot;: &quot;Your response here&quot;,
+        &quot;workflow&quot;: &quot;general&quot;
+      }
+    ]
+  }
+]"></textarea>
+            <button id="loadButton" class="load-button">Load Conversations</button>
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+        </div>
+
+        <div id="conversationsContainer"></div>
+    </div>
+
+    <script>
+        function formatResponse(text) {
+            // Handle null, undefined, or non-string responses
+            if (!text || typeof text !== 'string') {
+                return '<p><em>No response content</em></p>';
+            }
+
+            // Convert markdown-like formatting to HTML
+            let formatted = text
+                // Convert headers
+                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                
+                // Convert bold text
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                
+                // Convert bullet points
+                .replace(/^- (.+)$/gm, '<li>$1</li>')
+                
+                // Handle tool placeholders
+                .replace(/\{\{([^}]+)\}\}/g, '<div class="tool-placeholder">🔧 Tool: $1</div>')
+                
+                // Convert line breaks to paragraphs
+                .split('\n\n')
+                .map(paragraph => {
+                    if (paragraph.includes('<li>')) {
+                        return '<ul>' + paragraph + '</ul>';
+                    } else if (paragraph.includes('<h1>') || paragraph.includes('<h2>') || paragraph.includes('<h3>') || paragraph.includes('<div class="tool-placeholder">')) {
+                        return paragraph;
+                    } else if (paragraph.trim()) {
+                        return '<p>' + paragraph + '</p>';
+                    }
+                    return '';
+                })
+                .join('');
+
+            return formatted;
+        }
+
+        function renderConversations(conversationData) {
+            const container = document.getElementById('conversationsContainer');
+            container.innerHTML = '';
+
+            conversationData.forEach((chatSession, index) => {
+                const conversationGroup = document.createElement('div');
+                conversationGroup.className = 'conversation-group';
+
+                const header = document.createElement('div');
+                header.className = 'conversation-header';
+                header.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center;">
+                            <span>Conversation ${index + 1}</span>
+                            <span class="toggle-icon">▼</span>
+                        </div>
+                        <span class="message-count">${chatSession.conversation.length} messages</span>
+                    </div>
+                    <div class="conversation-id">ID: ${chatSession.chat_session_id}</div>
+                `;
+                conversationGroup.appendChild(header);
+
+                // Create content container
+                const contentContainer = document.createElement('div');
+                contentContainer.className = 'conversation-content';
+                contentContainer.id = `conversation-content-${index}`;
+
+                chatSession.conversation.forEach((message, messageIndex) => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message';
+
+                    // Handle missing or invalid workflow
+                    const workflow = message.workflow || 'unknown';
+                    const workflowClass = `workflow-${workflow}`;
+                    
+                    // Handle missing question or response
+                    const question = message.question || 'No question provided';
+                    const response = formatResponse(message.response);
+                    
+                    messageDiv.innerHTML = `
+                        <div class="message-header">
+                            <span class="workflow-tag ${workflowClass}">${workflow}</span>
+                        </div>
+                        
+                        <div class="question">
+                            <div class="question-label">Question</div>
+                            <div class="question-text">${question}</div>
+                        </div>
+                        
+                        <div class="response">
+                            <div class="response-label">Response</div>
+                            <div class="response-content">${response}</div>
+                        </div>
+                    `;
+
+                    contentContainer.appendChild(messageDiv);
+                });
+
+                conversationGroup.appendChild(contentContainer);
+                container.appendChild(conversationGroup);
+
+                // Add click handler for toggle functionality
+                header.addEventListener('click', function() {
+                    const content = contentContainer;
+                    const icon = header.querySelector('.toggle-icon');
+                    
+                    if (content.classList.contains('collapsed')) {
+                        content.classList.remove('collapsed');
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                        icon.classList.remove('collapsed');
+                    } else {
+                        content.classList.add('collapsed');
+                        content.style.maxHeight = '0px';
+                        icon.classList.add('collapsed');
+                    }
+                });
+            });
+        }
+
+        function loadConversations() {
+            const jsonInput = document.getElementById('jsonInput');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            try {
+                const data = JSON.parse(jsonInput.value.trim());
+                errorMessage.style.display = 'none';
+                renderConversations(data);
+            } catch (error) {
+                errorMessage.style.display = 'block';
+                errorMessage.textContent = `Error parsing JSON: ${error.message}`;
+                console.error('JSON parsing error:', error);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('loadButton').addEventListener('click', loadConversations);
+        
+        // Auto-load sample data if available
+        document.addEventListener('DOMContentLoaded', function() {
+            const sampleData = [
+                {
+                    "chat_session_id": "0198c7a9-ea40-7462-b557-2bfa9c209b06",
+                    "conversation": [
+                        {
+                            "id": "0198c7a9-ea6d-72c5-83a8-ceab6ac5720b",
+                            "question": "So in september i want to go to BCIt for mechanical engineering about 15K estimated in tuition and fees. I also want to buy a home, and retire between 30-50. But I am not sure ho to do all this, I am currently making 3200CAD a month living in abbotsford bc.",
+                            "response": "I understand you have some big goals ahead! Let me help you create a clear path to achieve your mechanical engineering education, homeownership, and early retirement dreams while building on your current $3,200 CAD monthly income.\n\n## **Baby Step 1: Build Your Starter Emergency Fund**\n\nBefore tackling any of your goals, you need a $1,000 starter emergency fund. This protects you from going into debt when life happens.\n\n- Set aside $1,000 in a separate savings account\n- Don't touch this money unless it's a true emergency\n- If you use it, replace it immediately before moving forward\n\n## **Baby Step 2: Cash Flow Your Education**\n\nSince you're planning to attend BCIT in September, you need to avoid student loans entirely. With your current income, you have time to save and plan.\n\n- Calculate exactly how much you can save between now and September\n- Look into scholarships, grants, and bursaries available for your program\n- Consider working part-time during school to help cover expenses\n- Explore if your current employer offers tuition assistance\n\n## **Create a Zero-Based Budget**\n\nTo accomplish your goals, every dollar needs a job. You'll need to know exactly where your money is going each month.\n\n- List all your income and expenses\n- Assign every dollar to a category (housing, food, transportation, savings, etc.)\n- Find areas where you can cut expenses to increase your savings rate\n- Prioritize your education fund first, then emergency fund completion\n\nSince you're just starting this journey, I'd like to offer you a tool that can help you get a clear picture of where your money should go each month. The Budget Calculator will show you a sample budget based on your income and help you identify areas where you can cut expenses to fund your education and future goals.\n\n{{BUDGETING_CALCULATOR}}",
+                            "workflow": "general"
+                        }
+                    ]
+                }
+            ];
+            
+            document.getElementById('jsonInput').value = JSON.stringify(sampleData, null, 2);
+            renderConversations(sampleData);
+        });
+    </script>
+</body>
+</html>
