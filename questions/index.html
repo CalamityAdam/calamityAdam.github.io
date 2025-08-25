@@ -696,17 +696,48 @@
             }
         }
 
+        // Function to load data based on current URL hash
+        async function loadDataFromHash() {
+            const urlParam = getURLParameter();
+            
+            if (urlParam) {
+                // Try to fetch data from the provided URL
+                try {
+                    console.log('Attempting to fetch data from:', urlParam);
+                    const data = await fetchDataFromURL(urlParam);
+                    
+                    // Populate the textarea with the fetched data
+                    document.getElementById('jsonInput').value = JSON.stringify(data, null, 2);
+                    
+                    // Render the conversations
+                    renderConversations(data);
+                    
+                    console.log('Successfully loaded data from URL');
+                    return true; // Indicate successful loading
+                } catch (error) {
+                    console.error('Error loading data from URL:', error);
+                    
+                    // Show error message to user
+                    const errorMessage = document.getElementById('errorMessage');
+                    errorMessage.style.display = 'block';
+                    errorMessage.textContent = `Error loading data from URL: ${error.message}`;
+                    return false; // Indicate failed loading
+                }
+            }
+            return false; // No URL parameter
+        }
+
         // Event listeners
         document.getElementById('loadButton').addEventListener('click', loadConversations);
         
-        // Function to get URL parameter
+        // Listen for hash changes to support navigation
+        window.addEventListener('hashchange', loadDataFromHash);
+        
+        // Function to get URL parameter from hash
         function getURLParameter() {
-            const path = window.location.pathname;
-            const segments = path.split('/');
-            // Look for a URL after /questions/
-            const questionsIndex = segments.indexOf('questions');
-            if (questionsIndex !== -1 && questionsIndex < segments.length - 1) {
-                const urlParam = segments.slice(questionsIndex + 1).join('/');
+            const hash = window.location.hash;
+            if (hash && hash.startsWith('#')) {
+                const urlParam = hash.substring(1); // Remove the # symbol
                 if (urlParam && urlParam.trim()) {
                     return decodeURIComponent(urlParam);
                 }
@@ -728,35 +759,13 @@
             }
         }
 
-        // Auto-load sample data if available
+        // Auto-load data on page load
         document.addEventListener('DOMContentLoaded', async function() {
-            const urlParam = getURLParameter();
+            // Try to load from hash first
+            const hashLoaded = await loadDataFromHash();
             
-            if (urlParam) {
-                // Try to fetch data from the provided URL
-                try {
-                    console.log('Attempting to fetch data from:', urlParam);
-                    const data = await fetchDataFromURL(urlParam);
-                    
-                    // Populate the textarea with the fetched data
-                    document.getElementById('jsonInput').value = JSON.stringify(data, null, 2);
-                    
-                    // Render the conversations
-                    renderConversations(data);
-                    
-                    console.log('Successfully loaded data from URL');
-                    return; // Exit early if URL loading was successful
-                } catch (error) {
-                    console.error('Error loading data from URL:', error);
-                    
-                    // Show error message to user
-                    const errorMessage = document.getElementById('errorMessage');
-                    errorMessage.style.display = 'block';
-                    errorMessage.textContent = `Error loading data from URL: ${error.message}`;
-                }
-            }
-            
-            // If no URL parameter or URL loading failed, load sample data
+            // If no hash parameter or hash loading failed, load sample data
+            if (!hashLoaded) {
             const sampleData = [
                 {
                     "chat_session_id": "01a8f2b3-cd45-6789-e012-3456789abcde",
@@ -788,8 +797,9 @@
                 }
             ];
             
-            document.getElementById('jsonInput').value = JSON.stringify(sampleData, null, 2);
-            renderConversations(sampleData);
+                document.getElementById('jsonInput').value = JSON.stringify(sampleData, null, 2);
+                renderConversations(sampleData);
+            }
         });
     </script>
 </body>
