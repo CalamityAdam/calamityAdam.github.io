@@ -699,8 +699,64 @@
         // Event listeners
         document.getElementById('loadButton').addEventListener('click', loadConversations);
         
+        // Function to get URL parameter
+        function getURLParameter() {
+            const path = window.location.pathname;
+            const segments = path.split('/');
+            // Look for a URL after /questions/
+            const questionsIndex = segments.indexOf('questions');
+            if (questionsIndex !== -1 && questionsIndex < segments.length - 1) {
+                const urlParam = segments.slice(questionsIndex + 1).join('/');
+                if (urlParam && urlParam.trim()) {
+                    return decodeURIComponent(urlParam);
+                }
+            }
+            return null;
+        }
+
+        // Function to fetch data from URL
+        async function fetchDataFromURL(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                throw new Error(`Failed to fetch data from ${url}: ${error.message}`);
+            }
+        }
+
         // Auto-load sample data if available
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            const urlParam = getURLParameter();
+            
+            if (urlParam) {
+                // Try to fetch data from the provided URL
+                try {
+                    console.log('Attempting to fetch data from:', urlParam);
+                    const data = await fetchDataFromURL(urlParam);
+                    
+                    // Populate the textarea with the fetched data
+                    document.getElementById('jsonInput').value = JSON.stringify(data, null, 2);
+                    
+                    // Render the conversations
+                    renderConversations(data);
+                    
+                    console.log('Successfully loaded data from URL');
+                    return; // Exit early if URL loading was successful
+                } catch (error) {
+                    console.error('Error loading data from URL:', error);
+                    
+                    // Show error message to user
+                    const errorMessage = document.getElementById('errorMessage');
+                    errorMessage.style.display = 'block';
+                    errorMessage.textContent = `Error loading data from URL: ${error.message}`;
+                }
+            }
+            
+            // If no URL parameter or URL loading failed, load sample data
             const sampleData = [
                 {
                     "chat_session_id": "01a8f2b3-cd45-6789-e012-3456789abcde",
