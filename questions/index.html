@@ -739,6 +739,7 @@
 
         let conversationData = [];
         let selectedConversationIndex = -1;
+        let currentDataUrl = null;
 
         function truncateText(text, wordLimit = 30) {
             if (!text || typeof text !== 'string') return 'No question available';
@@ -796,6 +797,11 @@
 
             selectedConversationIndex = index;
             renderConversationDetails(conversationData[index], index);
+            
+            // Update URL to include conversation index
+            if (currentDataUrl) {
+                updateURLHash(currentDataUrl, index);
+            }
         }
 
         function renderConversationDetails(chatSession, index) {
@@ -892,6 +898,15 @@
             try {
                 const data = JSON.parse(jsonInput.value.trim());
                 errorMessage.style.display = 'none';
+                
+                // Clear current data URL since this is manual loading
+                currentDataUrl = null;
+                
+                // Clear URL hash
+                if (window.location.hash) {
+                    history.replaceState(null, null, window.location.pathname);
+                }
+                
                 renderConversations(data);
             } catch (error) {
                 errorMessage.style.display = 'block';
@@ -902,19 +917,27 @@
 
         // Function to load data based on current URL hash
         async function loadDataFromHash() {
-            const urlParam = getURLParameter();
+            const { dataUrl, conversationIndex } = parseURLHash();
             
-            if (urlParam) {
+            if (dataUrl) {
                 // Try to fetch data from the provided URL
                 try {
-                    console.log('Attempting to fetch data from:', urlParam);
-                    const data = await fetchDataFromURL(urlParam);
+                    console.log('Attempting to fetch data from:', dataUrl);
+                    const data = await fetchDataFromURL(dataUrl);
                     
                     // Populate the textarea with the fetched data
                     document.getElementById('jsonInput').value = JSON.stringify(data, null, 2);
                     
+                    // Store current data URL
+                    currentDataUrl = dataUrl;
+                    
                     // Render the conversations
                     renderConversations(data);
+                    
+                    // Auto-select conversation if index is provided
+                    if (conversationIndex !== null && conversationIndex >= 0 && conversationIndex < data.length) {
+                        setTimeout(() => selectConversation(conversationIndex), 100);
+                    }
                     
                     console.log('Successfully loaded data from URL');
                     return true; // Indicate successful loading
@@ -937,16 +960,45 @@
         // Listen for hash changes to support navigation
         window.addEventListener('hashchange', loadDataFromHash);
         
-        // Function to get URL parameter from hash
-        function getURLParameter() {
+        // Function to parse URL hash parameters
+        function parseURLHash() {
             const hash = window.location.hash;
-            if (hash && hash.startsWith('#')) {
-                const urlParam = hash.substring(1); // Remove the # symbol
-                if (urlParam && urlParam.trim()) {
-                    return decodeURIComponent(urlParam);
-                }
+            if (!hash || !hash.startsWith('#')) {
+                return { dataUrl: null, conversationIndex: null };
             }
-            return null;
+            
+            const hashContent = hash.substring(1); // Remove the # symbol
+            
+            // Check if it contains a conversation index separator (&conv=)
+            if (hashContent.includes('&conv=')) {
+                const parts = hashContent.split('&conv=');
+                return {
+                    dataUrl: decodeURIComponent(parts[0]),
+                    conversationIndex: parseInt(parts[1], 10)
+                };
+            }
+            
+            // Legacy format - just data URL
+            return {
+                dataUrl: decodeURIComponent(hashContent),
+                conversationIndex: null
+            };
+        }
+
+        // Function to update URL hash with current state
+        function updateURLHash(dataUrl, conversationIndex) {
+            if (!dataUrl) return;
+            
+            let hashContent = encodeURIComponent(dataUrl);
+            if (conversationIndex !== null && conversationIndex !== undefined) {
+                hashContent += '&conv=' + conversationIndex;
+            }
+            
+            // Update URL without triggering hashchange event
+            const newHash = '#' + hashContent;
+            if (window.location.hash !== newHash) {
+                history.replaceState(null, null, newHash);
+            }
         }
 
         // Function to fetch data from URL
@@ -970,6 +1022,9 @@
             
             // If no hash parameter or hash loading failed, load sample data
             if (!hashLoaded) {
+                // Clear current data URL since this is sample data
+                currentDataUrl = null;
+                
             const sampleData = [
                 {
                     "chat_session_id": "01a8f2b3-cd45-6789-e012-3456789abcde",
