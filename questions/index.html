@@ -293,6 +293,135 @@
             font-weight: 600;
         }
 
+        /* Markdown Table Styles */
+        .markdown-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .markdown-table th {
+            background: #f8fafc;
+            color: #1a202c;
+            font-weight: 600;
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .markdown-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+            color: #2d3748;
+        }
+
+        .markdown-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .markdown-table tr:hover {
+            background: #f7fafc;
+        }
+
+        /* Code Styles */
+        .response-content code {
+            background: #f7fafc;
+            color: #2d3748;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 0.85em;
+            border: 1px solid #e2e8f0;
+        }
+
+        .response-content pre {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .response-content pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+            border: none;
+            font-size: inherit;
+        }
+
+        /* Link Styles */
+        .response-content a {
+            color: #4299e1;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .response-content a:hover {
+            color: #2b6cb0;
+            text-decoration: underline;
+        }
+
+        /* Horizontal Rule */
+        .response-content hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, #e2e8f0, #cbd5e0, #e2e8f0);
+            margin: 2rem 0;
+            border-radius: 1px;
+        }
+
+        /* Enhanced List Styles */
+        .response-content ul,
+        .response-content ol {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .response-content ol {
+            counter-reset: list-counter;
+        }
+
+        .response-content ol li {
+            counter-increment: list-counter;
+            position: relative;
+            padding-left: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .response-content ol li::before {
+            content: counter(list-counter) ".";
+            font-weight: 600;
+            color: #4299e1;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        .response-content ul li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .response-content ul li::before {
+            content: "•";
+            color: #4299e1;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
 
 
         .load-data-section {
@@ -441,30 +570,102 @@
             }
 
             // Convert markdown-like formatting to HTML
-            let formatted = text
-                // Convert headers
+            let formatted = text;
+
+            // Handle code blocks first (before other processing)
+            formatted = formatted.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
+                const language = lang ? ` class="language-${lang}"` : '';
+                return `<pre><code${language}>${code.trim()}</code></pre>`;
+            });
+
+            // Handle inline code
+            formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Handle tables
+            formatted = formatted.replace(/(\|[^\n]+\|\n)+/g, (tableMatch) => {
+                const rows = tableMatch.trim().split('\n');
+                if (rows.length < 2) return tableMatch;
+
+                // Check if second row is a separator (contains only |, -, :, and spaces)
+                const secondRow = rows[1];
+                const isSeparator = /^[\|\s\-:]+$/.test(secondRow);
+                
+                if (!isSeparator) return tableMatch;
+
+                let tableHtml = '<table class="markdown-table">';
+                
+                // Header row
+                const headerCells = rows[0].split('|').slice(1, -1); // Remove empty first/last elements
+                tableHtml += '<thead><tr>';
+                headerCells.forEach(cell => {
+                    tableHtml += `<th>${cell.trim()}</th>`;
+                });
+                tableHtml += '</tr></thead>';
+
+                // Body rows (skip separator row)
+                tableHtml += '<tbody>';
+                for (let i = 2; i < rows.length; i++) {
+                    const cells = rows[i].split('|').slice(1, -1);
+                    tableHtml += '<tr>';
+                    cells.forEach(cell => {
+                        tableHtml += `<td>${cell.trim()}</td>`;
+                    });
+                    tableHtml += '</tr>';
+                }
+                tableHtml += '</tbody></table>';
+
+                return tableHtml;
+            });
+
+            // Convert headers
+            formatted = formatted
                 .replace(/^# (.+)$/gm, '<h1>$1</h1>')
                 .replace(/^## (.+)$/gm, '<h2>$1</h2>')
                 .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^#### (.+)$/gm, '<h4>$1</h4>');
                 
-                // Convert bold text
+            // Convert bold and italic text
+            formatted = formatted
+                .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
                 .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+            // Convert numbered lists
+            formatted = formatted.replace(/^\d+\.\s+(.+)$/gm, '<li class="numbered">$1</li>');
                 
-                // Convert bullet points
-                .replace(/^- (.+)$/gm, '<li>$1</li>')
-                
-                // Handle tool placeholders
-                .replace(/\{\{([^}]+)\}\}/g, '<div class="tool-placeholder">🔧 Tool: $1</div>')
-                
-                // Convert line breaks to paragraphs
+            // Convert bullet points
+            formatted = formatted.replace(/^[-*+]\s+(.+)$/gm, '<li>$1</li>');
+
+            // Handle tool placeholders
+            formatted = formatted.replace(/\{\{([^}]+)\}\}/g, '<div class="tool-placeholder">🔧 Tool: $1</div>');
+
+            // Handle links
+            formatted = formatted.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+            // Handle horizontal rules
+            formatted = formatted.replace(/^---+$/gm, '<hr>');
+
+            // Convert line breaks to paragraphs
+            formatted = formatted
                 .split('\n\n')
                 .map(paragraph => {
-                    if (paragraph.includes('<li>')) {
+                    // Handle lists
+                    if (paragraph.includes('<li class="numbered">')) {
+                        return '<ol>' + paragraph + '</ol>';
+                    } else if (paragraph.includes('<li>')) {
                         return '<ul>' + paragraph + '</ul>';
-                    } else if (paragraph.includes('<h1>') || paragraph.includes('<h2>') || paragraph.includes('<h3>') || paragraph.includes('<div class="tool-placeholder">')) {
+                    } else if (paragraph.includes('<h1>') || paragraph.includes('<h2>') || 
+                              paragraph.includes('<h3>') || paragraph.includes('<h4>') || 
+                              paragraph.includes('<div class="tool-placeholder">') ||
+                              paragraph.includes('<table') || paragraph.includes('<pre>') ||
+                              paragraph.includes('<hr>')) {
                         return paragraph;
                     } else if (paragraph.trim()) {
-                        return '<p>' + paragraph + '</p>';
+                        // Don't wrap single line breaks in paragraphs if they're already formatted
+                        if (paragraph.includes('<br>')) {
+                            return paragraph;
+                        }
+                        return '<p>' + paragraph.replace(/\n/g, '<br>') + '</p>';
                     }
                     return '';
                 })
