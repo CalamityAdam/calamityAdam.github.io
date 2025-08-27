@@ -1075,6 +1075,12 @@
             selectedConversationIndex = index;
             renderConversationDetails(conversationData[index], index);
             
+            // Scroll main content to top for better UX
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                mainContent.scrollTop = 0;
+            }
+            
             // Update URL to include conversation index
             if (currentDataUrl) {
                 updateURLHash(currentDataUrl, index);
