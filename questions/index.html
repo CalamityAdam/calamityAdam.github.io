@@ -199,6 +199,18 @@
             border: 1px solid #cbd5e0;
         }
 
+        .session-date {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            background: #edf2f7;
+            color: #4a5568;
+            border: 1px solid #cbd5e0;
+            margin-left: 0.5rem;
+        }
+
         .question {
             background: #f7fafc;
             border-left: 4px solid #4299e1;
@@ -748,6 +760,33 @@
             return words.slice(0, wordLimit).join(' ') + '...';
         }
 
+        function formatSessionDate(dateString) {
+            if (!dateString) return null;
+            
+            try {
+                // Parse the date string (format: "2025-08-26 15:26:48.813330 +00:00")
+                const date = new Date(dateString);
+                
+                // Check if date is valid
+                if (isNaN(date.getTime())) return null;
+                
+                // Format options
+                const options = {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                };
+                
+                return date.toLocaleDateString('en-US', options);
+            } catch (error) {
+                console.warn('Error formatting date:', dateString, error);
+                return null;
+            }
+        }
+
         function generateConversationPreview(chatSession) {
             const firstMessage = chatSession.conversation[0];
             if (!firstMessage || !firstMessage.question) {
@@ -836,10 +875,15 @@
                 const workflowClass = `workflow-${workflow}`;
                 const question = message.question || 'No question provided';
                 const response = formatResponse(message.response);
+                
+                // Format session date if available (only show on first message)
+                const sessionDate = messageIndex === 0 && chatSession.session_created_date ? 
+                    formatSessionDate(chatSession.session_created_date) : null;
 
                 messageDiv.innerHTML = `
                     <div class="message-header">
                         <span class="workflow-tag ${workflowClass}">${workflow}</span>
+                        ${sessionDate ? `<span class="session-date">📅 ${sessionDate}</span>` : ''}
                     </div>
                     
                     <div class="question">
