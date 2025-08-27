@@ -211,6 +211,77 @@
             margin-left: 0.5rem;
         }
 
+        /* Search Styles */
+        .search-container {
+            position: relative;
+            margin-top: 1rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem;
+            padding-right: 2.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-input::placeholder {
+            color: #a0aec0;
+        }
+
+        .clear-search-btn {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #e2e8f0;
+            border: none;
+            border-radius: 50%;
+            width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.75rem;
+            color: #4a5568;
+            transition: all 0.2s ease;
+        }
+
+        .clear-search-btn:hover {
+            background: #cbd5e0;
+            color: #2d3748;
+        }
+
+        .conversation-item.filtered-out {
+            display: none;
+        }
+
+        .search-no-results {
+            padding: 2rem 1rem;
+            text-align: center;
+            color: #718096;
+            font-style: italic;
+        }
+
+        .search-highlight {
+            background: linear-gradient(135deg, #fef5e7 0%, #fed7aa 100%);
+            color: #744210;
+            padding: 0.1rem 0.2rem;
+            border-radius: 3px;
+            font-weight: 600;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
         .question {
             background: #f7fafc;
             border-left: 4px solid #4299e1;
@@ -543,6 +614,16 @@
             <div class="sidebar-header">
                 <h1>Conversations</h1>
                 <p>Select a conversation to view details</p>
+                
+                <div class="search-container">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        class="search-input" 
+                        placeholder="🔍 Search conversations..."
+                        autocomplete="off">
+                    <button id="clearSearch" class="clear-search-btn" style="display: none;">✕</button>
+                </div>
             </div>
             
             <div class="load-data-section">
@@ -752,6 +833,8 @@
         let conversationData = [];
         let selectedConversationIndex = -1;
         let currentDataUrl = null;
+        let allConversationItems = []; // Store references to conversation items for filtering
+        let currentSearchTerm = ''; // Store current search term for highlighting
 
         function truncateText(text, wordLimit = 30) {
             if (!text || typeof text !== 'string') return 'No question available';
@@ -787,6 +870,153 @@
             }
         }
 
+        // Simple string search function
+        function stringMatch(searchTerm, text) {
+            if (!searchTerm || !text) return false;
+            
+            const search = searchTerm.toLowerCase().trim();
+            const target = text.toLowerCase();
+            
+            // Simple case-insensitive string inclusion
+            return target.includes(search);
+        }
+
+        // Function to highlight matching text
+        function highlightText(text, searchTerm) {
+            if (!searchTerm || !text || !searchTerm.trim()) {
+                return text;
+            }
+            
+            const search = searchTerm.trim();
+            
+            // Create a case-insensitive regex with word boundaries for better matching
+            const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedSearch})`, 'gi');
+            
+            // Replace matches with highlighted spans
+            return text.replace(regex, '<span class="search-highlight">$1</span>');
+        }
+
+        // Function to highlight text in HTML content (more careful approach)
+        function highlightTextInHTML(html, searchTerm) {
+            if (!searchTerm || !html || !searchTerm.trim()) {
+                return html;
+            }
+            
+            const search = searchTerm.trim();
+            const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            
+            // Create a temporary div to parse HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // Function to highlight text in text nodes only
+            function highlightInTextNodes(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const text = node.textContent;
+                    const regex = new RegExp(`(${escapedSearch})`, 'gi');
+                    if (regex.test(text)) {
+                        const highlightedText = text.replace(regex, '<span class="search-highlight">$1</span>');
+                        const wrapper = document.createElement('span');
+                        wrapper.innerHTML = highlightedText;
+                        node.parentNode.replaceChild(wrapper, node);
+                    }
+                } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
+                    // Process child nodes (but not in script or style tags)
+                    const children = Array.from(node.childNodes);
+                    children.forEach(highlightInTextNodes);
+                }
+            }
+            
+            highlightInTextNodes(tempDiv);
+            return tempDiv.innerHTML;
+        }
+
+        // Create searchable text from conversation
+        function createSearchableText(chatSession) {
+            let searchText = '';
+            
+            // Add all questions and responses
+            chatSession.conversation.forEach(message => {
+                searchText += (message.question || '') + ' ';
+                searchText += (message.response || '') + ' ';
+                searchText += (message.workflow || '') + ' ';
+            });
+            
+            // Add session ID for exact searches
+            searchText += chatSession.chat_session_id + ' ';
+            
+            return searchText;
+        }
+
+        // Filter conversations based on search term
+        function filterConversations(searchTerm) {
+            const conversationList = document.getElementById('conversationList');
+            let visibleCount = 0;
+            
+            // Store current search term for highlighting
+            currentSearchTerm = searchTerm;
+            
+            // Remove existing no-results message
+            const existingNoResults = conversationList.querySelector('.search-no-results');
+            if (existingNoResults) {
+                existingNoResults.remove();
+            }
+            
+            allConversationItems.forEach((item, index) => {
+                const chatSession = conversationData[index];
+                const searchableText = createSearchableText(chatSession);
+                const matches = !searchTerm.trim() || stringMatch(searchTerm, searchableText);
+                
+                if (matches) {
+                    item.classList.remove('filtered-out');
+                    item.style.display = ''; // Ensure it's visible
+                    visibleCount++;
+                    
+                    // Update the preview with highlighting
+                    updateConversationItemWithHighlight(item, chatSession, index, searchTerm);
+                } else {
+                    item.classList.add('filtered-out');
+                    item.style.display = 'none'; // Force hide as backup
+                }
+            });
+            
+            // Re-render conversation details if one is selected to show highlighting
+            if (selectedConversationIndex >= 0 && selectedConversationIndex < conversationData.length) {
+                renderConversationDetails(conversationData[selectedConversationIndex], selectedConversationIndex);
+            }
+            
+            // Show no results message if needed
+            if (searchTerm.trim() && visibleCount === 0) {
+                const noResultsDiv = document.createElement('div');
+                noResultsDiv.className = 'search-no-results';
+                noResultsDiv.textContent = `No conversations found for "${searchTerm}"`;
+                conversationList.appendChild(noResultsDiv);
+            }
+            
+            // Show/hide clear button
+            const clearButton = document.getElementById('clearSearch');
+            clearButton.style.display = searchTerm.trim() ? 'flex' : 'none';
+        }
+
+        // Update conversation item with highlighting
+        function updateConversationItemWithHighlight(item, chatSession, index, searchTerm) {
+            const preview = generateConversationPreview(chatSession);
+            const messageCount = chatSession.conversation.length;
+            const highlightedPreview = searchTerm.trim() ? highlightText(preview, searchTerm) : preview;
+
+            item.innerHTML = `
+                <div class="conversation-preview">${highlightedPreview}</div>
+                <div class="conversation-meta">
+                    <span>${messageCount} message${messageCount !== 1 ? 's' : ''}</span>
+                    <span>Conversation ${index + 1}</span>
+                </div>
+            `;
+            
+            // Re-attach the click event listener since innerHTML overwrites it
+            item.onclick = () => selectConversation(index);
+        }
+
         function generateConversationPreview(chatSession) {
             const firstMessage = chatSession.conversation[0];
             if (!firstMessage || !firstMessage.question) {
@@ -798,6 +1028,7 @@
         function renderConversationList(data) {
             const conversationList = document.getElementById('conversationList');
             conversationList.innerHTML = '';
+            allConversationItems = []; // Reset the array
 
             data.forEach((chatSession, index) => {
                 const conversationItem = document.createElement('div');
@@ -820,6 +1051,7 @@
                 });
 
                 conversationList.appendChild(conversationItem);
+                allConversationItems.push(conversationItem); // Store reference for filtering
             });
         }
 
@@ -873,8 +1105,16 @@
 
                 const workflow = message.workflow || 'unknown';
                 const workflowClass = `workflow-${workflow}`;
-                const question = message.question || 'No question provided';
-                const response = formatResponse(message.response);
+                let question = message.question || 'No question provided';
+                let response = formatResponse(message.response);
+                
+                // Apply highlighting if there's a current search term
+                if (currentSearchTerm && currentSearchTerm.trim()) {
+                    question = highlightText(question, currentSearchTerm);
+                    // Note: We need to highlight after markdown processing, so we'll do a simple approach
+                    // that works with the already processed HTML
+                    response = highlightTextInHTML(response, currentSearchTerm);
+                }
                 
                 // Format session date if available (only show on first message)
                 const sessionDate = messageIndex === 0 && chatSession.session_created_date ? 
@@ -1003,6 +1243,26 @@
         
         // Listen for hash changes to support navigation
         window.addEventListener('hashchange', loadDataFromHash);
+        
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            filterConversations(e.target.value);
+        });
+        
+        document.getElementById('clearSearch').addEventListener('click', function() {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = '';
+            filterConversations('');
+            searchInput.focus();
+        });
+        
+        // Clear search on Escape key
+        document.getElementById('searchInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                this.value = '';
+                filterConversations('');
+            }
+        });
         
         // Function to parse URL hash parameters
         function parseURLHash() {
