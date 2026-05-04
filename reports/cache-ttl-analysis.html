@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<title>Cache TTL Analysis: 5min → 1hr Counterfactual</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e1e4e8; padding: 24px; line-height: 1.55; }
+  h1 { font-size: 28px; color: #fff; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin: 32px 0 12px; color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 6px; }
+  h3 { font-size: 16px; margin: 20px 0 10px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; margin-bottom: 24px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .grid.two { grid-template-columns: 1fr 1fr; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 18px; }
+  .card.full { grid-column: 1 / -1; }
+  .stat { font-size: 30px; font-weight: 700; color: #58a6ff; line-height: 1.1; }
+  .stat.pos { color: #3fb950; }
+  .stat.neg { color: #f85149; }
+  .stat-label { font-size: 13px; color: #8b949e; margin-bottom: 6px; }
+  .stat-sub { font-size: 12px; color: #6e7681; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; border-bottom: 2px solid #30363d; color: #8b949e; font-weight: 600; position: sticky; top: 0; background: #161b22; }
+  td { padding: 6px 12px; border-bottom: 1px solid #21262d; }
+  td:nth-child(n+2) { font-variant-numeric: tabular-nums; }
+  tr:hover { background: #1c2128; }
+  .scrollable { max-height: 480px; overflow-y: auto; }
+  .insight { background: #1c2128; border-left: 3px solid #58a6ff; padding: 12px 16px; margin: 12px 0; border-radius: 0 4px 4px 0; font-size: 14px; }
+  .insight.warn { border-left-color: #d29922; }
+  .insight.good { border-left-color: #3fb950; }
+  .insight.bad  { border-left-color: #f85149; }
+  .chart { position: relative; height: 320px; }
+  code { background: #21262d; padding: 1px 6px; border-radius: 3px; font-size: 12px; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-left: 6px; }
+  .pill.win { background: #1a3a1f; color: #3fb950; }
+  .pill.loss { background: #3a1a1a; color: #f85149; }
+</style></head>
+<body>
+
+<h1>Cache TTL Analysis: 5-min → 1-hour <span class="pill win">−30.7% coach cost</span></h1>
+<p class="subtitle">RP1 coach (Sonnet 4.6) · 86,130 coach steps · 6 full CT days 2026-04-25–2026-04-30 · 100% Sonnet post-rollout</p>
+
+<div class="grid">
+  <div class="card">
+    <div class="stat-label">Observed cost (real, 5m)</div>
+    <div class="stat">$2,997</div>
+    <div class="stat-sub">$499/day · $182k/yr run-rate</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Counterfactual @ 1h</div>
+    <div class="stat">$2,057</div>
+    <div class="stat-sub">$343/day</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Savings @ 1h</div>
+    <div class="stat pos">$912</div>
+    <div class="stat-sub">$152/day · ~$55k/yr</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Simulator validation</div>
+    <div class="stat">0.991×</div>
+    <div class="stat-sub">sim 5m vs observed (target 1.0)</div>
+  </div>
+</div>
+
+<div class="insight good">
+  <strong>Verdict:</strong> moving the coach cache TTL from 5 minutes to 1 hour saves <strong>$911.72 over 6 days (30.7% reduction)</strong>,
+  ≈ <strong>$55k/yr</strong> at current volume. Cache writes drop 15,476 → 2,014
+  (87% fewer write events). Per-request amortization improves
+  4.6× → 41.8×.
+</div>
+
+<div class="insight warn">
+  <strong>Hypothesis check (trusted_education / trusted_connect):</strong> the original hunch was that the long-tail Trusted intents,
+  with their 8K+ token prompts, would benefit most from longer caching. <strong>The data refutes this.</strong> Trusted intents fire too
+  rarely to fill a 1-hour window — at 1h, most still trigger a fresh write per session burst, but now at the 2× write premium instead of
+  1.25×. The biggest savings come from <strong>high-volume budgeting / debt / savings / housing / investing</strong> intents, where 1h captures
+  longer reuse windows. Several individual <code>trusted_connect.*</code> intents actually <em>cost more</em> at 1h
+  (e.g. <code>trusted_connect.mortgage.home_purchase</code> +44%, <code>trusted_connect.insurance.long_term_care</code> +55%). See
+  the "Biggest losers" table below.
+</div>
+
+<div class="insight">
+  <strong>Better-than-uniform-1h:</strong> a per-intent TTL policy — 1h for high-volume groups, leave low-volume <code>trusted_*</code>
+  on 5m — would push savings further. Worth a follow-up if the engineering cost is small.
+</div>
+
+<h2>Cost decomposition</h2>
+<div class="grid two">
+  <div class="card">
+    <h3>Where the cost lives</h3>
+    <table>
+      <thead><tr><th>Component</th><th>5m simulated</th><th>1h counterfactual</th><th>Δ</th></tr></thead>
+      <tbody>
+        <tr><td>Cache writes</td><td>$1,272.92</td><td>$273.01</td><td>$-999.91</td></tr>
+        <tr><td>Cache reads</td><td>$459.23</td><td>$547.41</td><td>$+88.18</td></tr>
+        <tr><td>Uncached input</td><td>$752.31</td><td>$752.31</td><td>$0.00</td></tr>
+        <tr><td>Output</td><td>$483.77</td><td>$483.77</td><td>$0.00</td></tr>
+        <tr style="font-weight:bold;background:#1c2128;"><td>Total</td><td>$2,968.22</td><td>$2,056.50</td><td>$-911.72</td></tr>
+      </tbody>
+    </table>
+    <p class="stat-sub" style="margin-top:10px;">Uncached + output stay constant — the entire savings comes from cache write/read trade-off.</p>
+  </div>
+
+  <div class="card">
+    <h3>Inter-arrival gap to prior same-intent turn</h3>
+    <div class="chart"><canvas id="gapChart"></canvas></div>
+    <p class="stat-sub" style="margin-top:10px;">
+      Cumulative cache-eligible recurrences captured: <strong>5m:</strong> 82.1%
+      &middot; <strong>1h:</strong> 97.8%
+    </p>
+  </div>
+</div>
+
+<h2>Per-intent-group rollup</h2>
+<div class="card full">
+  <div class="scrollable"><table><thead><tr><th>Intent Group</th><th>Turns</th><th>Cache $ @ 5m</th><th>Cache $ @ 1h</th><th>Δ $</th><th>Δ %</th><th>Amort 5m</th><th>Amort 1h</th></tr></thead><tbody><tr><td>investing_retirement</td><td>18,271</td><td>$194.19</td><td>$120.63</td><td>$-73.56</td><td>-37.9%</td><td>16.0×</td><td>396.2×</td></tr><tr><td>debt</td><td>15,388</td><td>$257.66</td><td>$148.75</td><td>$-108.91</td><td>-42.3%</td><td>6.3×</td><td>39.0×</td></tr><tr><td>budgeting</td><td>12,367</td><td>$303.61</td><td>$98.29</td><td>$-205.32</td><td>-67.6%</td><td>3.2×</td><td>88.0×</td></tr><tr><td>housing</td><td>10,060</td><td>$171.30</td><td>$74.64</td><td>$-96.66</td><td>-56.4%</td><td>6.4×</td><td>169.5×</td></tr><tr><td>general_research</td><td>7,418</td><td>$103.48</td><td>$58.76</td><td>$-44.72</td><td>-43.2%</td><td>8.4×</td><td>70.3×</td></tr><tr><td>savings</td><td>6,088</td><td>$127.76</td><td>$42.96</td><td>$-84.80</td><td>-66.4%</td><td>4.0×</td><td>163.5×</td></tr><tr><td>insurance</td><td>3,349</td><td>$107.32</td><td>$33.84</td><td>$-73.48</td><td>-68.5%</td><td>1.9×</td><td>33.5×</td></tr><tr><td>business_self_employment</td><td>2,554</td><td>$79.13</td><td>$33.45</td><td>$-45.68</td><td>-57.7%</td><td>2.0×</td><td>17.1×</td></tr><tr><td>career</td><td>2,409</td><td>$66.35</td><td>$26.35</td><td>$-40.00</td><td>-60.3%</td><td>2.4×</td><td>24.9×</td></tr><tr><td>trusted_education</td><td>2,364</td><td>$106.55</td><td>$56.54</td><td>$-50.01</td><td>-46.9%</td><td>1.3×</td><td>7.5×</td></tr><tr><td>relationships_mental_health</td><td>2,057</td><td>$53.98</td><td>$19.94</td><td>$-34.04</td><td>-63.1%</td><td>2.7×</td><td>35.7×</td></tr><tr><td>kids_college</td><td>1,387</td><td>$52.13</td><td>$27.89</td><td>$-24.24</td><td>-46.5%</td><td>1.4×</td><td>7.9×</td></tr><tr><td>product_support</td><td>1,017</td><td>$33.21</td><td>$8.65</td><td>$-24.56</td><td>-74.0%</td><td>1.7×</td><td>52.5×</td></tr><tr><td>trusted_connect</td><td>657</td><td>$40.62</td><td>$36.06</td><td>$-4.56</td><td>-11.2%</td><td>0.9×</td><td>2.7×</td></tr><tr><td>giving</td><td>499</td><td>$25.60</td><td>$25.13</td><td>$-0.47</td><td>-1.8%</td><td>0.6×</td><td>1.8×</td></tr><tr><td>safety</td><td>147</td><td>$5.69</td><td>$4.55</td><td>$-1.14</td><td>-20.0%</td><td>1.1×</td><td>3.6×</td></tr><tr><td>entreleadership</td><td>97</td><td>$3.48</td><td>$3.84</td><td>$0.36</td><td>10.3%</td><td>3.6×</td><td>5.9×</td></tr><tr><td>taxes</td><td>1</td><td>$0.07</td><td>$0.12</td><td>$0.05</td><td>71.4%</td><td>0.0×</td><td>0.0×</td></tr></tbody></table></div>
+</div>
+
+<div class="card full" style="margin-top:16px;">
+  <h3>Cache cost: 5m vs 1h, by intent group (top 15 by traffic)</h3>
+  <div class="chart" style="height:380px;"><canvas id="groupChart"></canvas></div>
+</div>
+
+<h2>Biggest winners — intents that save the most at 1h</h2>
+<div class="card full">
+  <p class="stat-sub" style="margin-bottom:10px;">
+    Top 20 intents by absolute savings over the 6-day window. Note the dominance of high-volume budgeting / debt / savings / housing intents.
+  </p>
+  <div class="scrollable"><table><thead><tr><th>Intent</th><th>Turns</th><th>Avg Prefix Tokens</th><th>Cache $ @ 5m</th><th>Cache $ @ 1h</th><th>Δ $</th><th>Δ %</th></tr></thead><tbody><tr><td>budgeting.build_a_budget</td><td>2,280</td><td>22,404</td><td>$47.99</td><td>$16.61</td><td>$-31.38</td><td>-65.4%</td></tr><tr><td>budgeting.increase_monthly_margin</td><td>1,908</td><td>22,230</td><td>$45.17</td><td>$13.85</td><td>$-31.32</td><td>-69.3%</td></tr><tr><td>budgeting.allocate_margin</td><td>1,911</td><td>21,502</td><td>$44.45</td><td>$13.18</td><td>$-31.27</td><td>-70.3%</td></tr><tr><td>budgeting.learn</td><td>2,425</td><td>21,493</td><td>$47.09</td><td>$16.50</td><td>$-30.59</td><td>-65.0%</td></tr><tr><td>debt.pay_off_mortgage</td><td>1,369</td><td>21,164</td><td>$39.41</td><td>$10.38</td><td>$-29.03</td><td>-73.7%</td></tr><tr><td>savings.emergency_fund</td><td>3,185</td><td>21,027</td><td>$49.70</td><td>$20.81</td><td>$-28.89</td><td>-58.1%</td></tr><tr><td>housing.manage</td><td>2,167</td><td>22,594</td><td>$45.15</td><td>$16.34</td><td>$-28.81</td><td>-63.8%</td></tr><tr><td>housing.mortgage_payoff</td><td>1,901</td><td>21,209</td><td>$41.75</td><td>$13.53</td><td>$-28.22</td><td>-67.6%</td></tr><tr><td>savings.general</td><td>1,159</td><td>21,015</td><td>$37.17</td><td>$9.14</td><td>$-28.03</td><td>-75.4%</td></tr><tr><td>savings.sinking_fund</td><td>1,744</td><td>21,202</td><td>$40.89</td><td>$13.01</td><td>$-27.88</td><td>-68.2%</td></tr><tr><td>investing_retirement.fund_selection_allocation</td><td>2,336</td><td>21,815</td><td>$44.62</td><td>$16.87</td><td>$-27.75</td><td>-62.2%</td></tr><tr><td>budgeting.understand_spending</td><td>1,168</td><td>21,689</td><td>$37.06</td><td>$9.54</td><td>$-27.52</td><td>-74.3%</td></tr><tr><td>budgeting.analyze</td><td>1,546</td><td>22,178</td><td>$38.94</td><td>$11.70</td><td>$-27.24</td><td>-70.0%</td></tr><tr><td>product_support.general</td><td>1,017</td><td>21,022</td><td>$33.21</td><td>$8.65</td><td>$-24.56</td><td>-74.0%</td></tr><tr><td>insurance.general</td><td>958</td><td>21,299</td><td>$33.19</td><td>$8.70</td><td>$-24.49</td><td>-73.8%</td></tr><tr><td>trusted_education.tax</td><td>975</td><td>26,230</td><td>$34.58</td><td>$10.50</td><td>$-24.08</td><td>-69.6%</td></tr><tr><td>housing.acquire</td><td>5,433</td><td>22,889</td><td>$61.29</td><td>$37.72</td><td>$-23.57</td><td>-38.5%</td></tr><tr><td>debt.vehicle</td><td>1,050</td><td>21,361</td><td>$30.29</td><td>$9.27</td><td>$-21.02</td><td>-69.4%</td></tr><tr><td>career.direction.job_switching</td><td>1,450</td><td>21,267</td><td>$32.86</td><td>$12.00</td><td>$-20.86</td><td>-63.5%</td></tr><tr><td>insurance.policy_type_evaluation</td><td>813</td><td>21,997</td><td>$28.16</td><td>$8.03</td><td>$-20.13</td><td>-71.5%</td></tr></tbody></table></div>
+</div>
+
+<h2>Biggest losers — intents that cost more at 1h</h2>
+<div class="card full">
+  <p class="stat-sub" style="margin-bottom:10px;">
+    Intents where 1h is <em>more expensive</em> than 5m. These are the long-tail, low-volume cases where reuse doesn't keep up with the 2× write premium.
+    The original hypothesis (trusted_*) lives here — almost every loser is a <code>trusted_*</code>, fallback, or low-volume edge intent.
+  </p>
+  <div class="scrollable"><table><thead><tr><th>Intent</th><th>Turns</th><th>Avg Prefix Tokens</th><th>Cache $ @ 5m</th><th>Cache $ @ 1h</th><th>Δ $</th><th>Δ %</th></tr></thead><tbody><tr><td>debt.fallback</td><td>48</td><td>20,833</td><td>$2.96</td><td>$3.73</td><td>$0.77</td><td>26.0%</td></tr><tr><td>trusted_education.insurance.property_casualty</td><td>25</td><td>23,657</td><td>$1.72</td><td>$2.33</td><td>$0.61</td><td>35.5%</td></tr><tr><td>trusted_education.insurance.long_term_care</td><td>57</td><td>24,788</td><td>$2.82</td><td>$3.37</td><td>$0.55</td><td>19.5%</td></tr><tr><td>trusted_connect.mortgage.home_purchase</td><td>15</td><td>29,215</td><td>$1.14</td><td>$1.64</td><td>$0.50</td><td>43.9%</td></tr><tr><td>giving.increasing_generosity</td><td>79</td><td>21,285</td><td>$3.80</td><td>$4.27</td><td>$0.47</td><td>12.4%</td></tr><tr><td>trusted_education.home_services</td><td>16</td><td>23,042</td><td>$0.82</td><td>$1.28</td><td>$0.46</td><td>56.1%</td></tr><tr><td>giving.how_to_start</td><td>12</td><td>22,311</td><td>$0.72</td><td>$1.13</td><td>$0.41</td><td>56.9%</td></tr><tr><td>trusted_connect.insurance.long_term_care</td><td>14</td><td>30,525</td><td>$0.75</td><td>$1.16</td><td>$0.41</td><td>54.7%</td></tr><tr><td>trusted_connect.wills</td><td>91</td><td>28,881</td><td>$5.17</td><td>$5.57</td><td>$0.40</td><td>7.7%</td></tr><tr><td>giving.windfall_income</td><td>47</td><td>21,570</td><td>$2.45</td><td>$2.85</td><td>$0.40</td><td>16.3%</td></tr><tr><td>entreleadership.general</td><td>97</td><td>37,535</td><td>$3.48</td><td>$3.84</td><td>$0.36</td><td>10.3%</td></tr><tr><td>trusted_education.insurance.term_life</td><td>80</td><td>24,718</td><td>$5.10</td><td>$5.39</td><td>$0.29</td><td>5.7%</td></tr><tr><td>trusted_connect.home_services</td><td>10</td><td>28,951</td><td>$0.49</td><td>$0.76</td><td>$0.27</td><td>55.1%</td></tr><tr><td>trusted_connect.insurance.term_life</td><td>24</td><td>29,937</td><td>$1.65</td><td>$1.90</td><td>$0.25</td><td>15.2%</td></tr><tr><td>debt.payoff.strategy_acceleration</td><td>11</td><td>20,381</td><td>$0.42</td><td>$0.66</td><td>$0.24</td><td>57.1%</td></tr><tr><td>trusted_connect.insurance.property_casualty</td><td>23</td><td>29,493</td><td>$1.83</td><td>$2.07</td><td>$0.24</td><td>13.1%</td></tr><tr><td>trusted_connect.real_estate.sell</td><td>21</td><td>28,287</td><td>$1.25</td><td>$1.46</td><td>$0.21</td><td>16.8%</td></tr><tr><td>safety.unapproved_roleplay</td><td>9</td><td>19,798</td><td>$0.33</td><td>$0.50</td><td>$0.17</td><td>51.5%</td></tr><tr><td>trusted_education.insurance.medicare</td><td>12</td><td>24,736</td><td>$0.78</td><td>$0.95</td><td>$0.17</td><td>21.8%</td></tr><tr><td>giving.no_church_home</td><td>14</td><td>21,180</td><td>$0.67</td><td>$0.81</td><td>$0.14</td><td>20.9%</td></tr></tbody></table></div>
+</div>
+
+<h2>Methodology &amp; caveats</h2>
+<ul style="padding-left: 24px; color: #c9d1d9; font-size: 14px;">
+  <li><strong>Window:</strong> 2026-04-25 → 2026-04-30 (6 full CT days, post 100%-Sonnet rollout on 2026-04-24). May 1+ excluded — Redshift ETL had only partially loaded May 1 and not loaded May 2/3 at extract time. 6 days short of the requested 7, but the alternative (including the Apr 24 ramp day) would mix pre-rollout traffic.</li>
+  <li><strong>Filter:</strong> <code>step_costs</code> where <code>agent_type='conversational-coach'</code> and <code>provider='anthropic'</code>, joined to <code>turn_traces.active_intent_key</code>. 86,130/86,130 steps had an attributable intent.</li>
+  <li><strong>Pricing (Sonnet 4.6, per M tokens):</strong> input $3.00 · 5m write $3.75 (1.25×) · 1h write $6.00 (2×) · cache read $0.30 (0.1×) · output $15.00.</li>
+  <li><strong>Simulator:</strong> for each coach step, gap to prior same-intent step → hit if ≤ TTL else write. Uses observed per-step <code>cache_read_tokens + cache_write_tokens</code> as the cacheable prefix size, so the simulator is anchored to real per-request bytes rather than estimates.</li>
+  <li><strong>Validation:</strong> simulated 5m total = $2,968.22 vs observed $2,996.61, ratio 0.991. Tight enough to trust the counterfactual delta directionally and to within a few percent in magnitude.</li>
+  <li><strong>Simplification:</strong> the simulator collapses the two real cache breakpoints (base prompt ~13.5K tokens + intent prompt ~3-11K tokens) into one prefix per intent. In reality the base portion almost always hits cache regardless of regime, so the savings analysis isolates correctly to the intent-block churn — but exact per-intent dollar amounts could shift slightly under a two-breakpoint model.</li>
+  <li><strong>Discrepancy with stated metrics:</strong> measured <code>cache_read_tokens / total_input_tokens</code> = 71.8% (vs the 91% you cited) and token-weighted amortization = 4.38× (vs 5.89×). Closest match: <strong>cache-touched share of input</strong> = 88.2% (matches "91%" within rounding) — likely the same metric under a different name.</li>
+</ul>
+
+<script>
+new Chart(document.getElementById('gapChart'), {
+  type: 'bar',
+  data: {
+    labels: ["0-1m", "1-5m", "5-15m", "15-30m", "30-60m", "1-2h", ">2h"],
+    datasets: [{
+      label: 'Inter-arrival count',
+      data: [38009, 32645, 8250, 3238, 1974, 1043, 879],
+      backgroundColor: ['#3fb950','#3fb950','#d29922','#d29922','#d29922','#58a6ff','#f85149']
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toLocaleString() + ' turns' } } },
+    scales: {
+      x: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
+      y: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } }
+    }
+  }
+});
+
+new Chart(document.getElementById('groupChart'), {
+  type: 'bar',
+  data: {
+    labels: ["investing_retirement", "debt", "budgeting", "housing", "general_research", "savings", "insurance", "business_self_employment", "career", "trusted_education", "relationships_mental_health", "kids_college", "product_support", "trusted_connect", "giving"],
+    datasets: [
+      { label: 'Cache $ @ 5m (current)', data: [194.19, 257.66, 303.61, 171.3, 103.48, 127.76, 107.32, 79.13, 66.35, 106.55, 53.98, 52.13, 33.21, 40.62, 25.6], backgroundColor: 'rgba(248,81,73,0.7)' },
+      { label: 'Cache $ @ 1h (counterfactual)', data: [120.63, 148.75, 98.29, 74.64, 58.76, 42.96, 33.84, 33.45, 26.35, 56.54, 19.94, 27.89, 8.65, 36.06, 25.13], backgroundColor: 'rgba(63,185,80,0.7)' }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#c9d1d9' } } },
+    scales: {
+      x: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
+      y: { ticks: { color: '#8b949e', callback: v => '$' + v }, grid: { color: '#21262d' } }
+    }
+  }
+});
+</script>
+
+</body></html>

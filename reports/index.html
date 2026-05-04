@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports — Adam Sisk</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:200,400,800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --black: #35393c;
+      --teal: #42858c;
+      --pastel: #b5d5d0;
+      --red: #db3a34;
+      --green: #397367;
+      --blue: #1D70A2;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    * { margin: 0; padding: 0; }
+
+    html { font-size: 18px; color: var(--black); }
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: var(--pastel);
+      color: var(--black);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .wrap {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .crumbs {
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .crumbs a {
+      color: var(--blue);
+      text-decoration: underline;
+    }
+
+    h1 {
+      font-weight: 800;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+    }
+
+    .lede {
+      font-weight: 200;
+      font-size: 1rem;
+      margin-bottom: 2rem;
+      max-width: 56ch;
+    }
+
+    .report-list {
+      list-style: none;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .report-card {
+      background: #fff;
+      border: 2px solid var(--black);
+      border-radius: 6px;
+      padding: 1.25rem 1.5rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .report-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 4px 4px 0 var(--blue);
+    }
+
+    .report-card a {
+      color: var(--black);
+      text-decoration: none;
+      display: block;
+    }
+
+    .report-title {
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--blue);
+      margin-bottom: 0.4rem;
+    }
+
+    .report-meta {
+      font-size: 0.75rem;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.6rem;
+    }
+
+    .report-desc {
+      font-size: 0.9rem;
+      font-weight: 400;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 1.5rem; }
+      body { padding: 1.5rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="crumbs">
+      <a href="../">← home</a>
+    </nav>
+
+    <h1>Reports</h1>
+    <p class="lede">Standalone analyses and dashboards I've built. Mostly data-discovery work — things worth keeping around in a place I can link to.</p>
+
+    <ul class="report-list">
+      <li class="report-card">
+        <a href="./cache-ttl-analysis.html">
+          <div class="report-title">Cache TTL Analysis: 5min → 1hr Counterfactual</div>
+          <div class="report-meta">May 2026</div>
+          <p class="report-desc">
+            What would happen if we bumped prompt cache TTL from 5 minutes to 1 hour? A per-intent-group breakdown of the winners, the losers, and where the cost actually moves.
+          </p>
+        </a>
+      </li>
+    </ul>
+  </div>
+</body>
+</html>
