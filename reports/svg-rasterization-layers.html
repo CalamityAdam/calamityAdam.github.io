@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How three rasterization layers conspired against an SVG logo</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link href="https://fonts.googleapis.com/css?family=Montserrat:200,400,600,800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #35393c;
+    --ink: #2d3236;
+    --ink-soft: #4a5358;
+    --ink-muted: #7a8388;
+    --teal: #42858c;
+    --pastel: #b5d5d0;
+    --pastel-soft: #d8eae6;
+    --red: #db3a34;
+    --green: #397367;
+    --blue: #1D70A2;
+    --bg: #f5f1e8;
+    --bg-card: #ffffff;
+    --rule: #d8d2c2;
+    --code-bg: #1e1e2e;
+    --code-ink: #cdd6f4;
+    --code-comment: #6c7086;
+    --code-keyword: #cba6f7;
+    --code-string: #a6e3a1;
+    --code-tag: #f38ba8;
+    --code-attr: #fab387;
+    --code-fn: #89b4fa;
+    --diff-add-bg: rgba(166, 227, 161, 0.16);
+    --diff-add-ink: #a6e3a1;
+    --diff-remove-bg: rgba(243, 139, 168, 0.14);
+    --diff-remove-ink: #f38ba8;
+    --shadow: 0 8px 24px rgba(53, 57, 60, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .course {
+    scroll-snap-type: y proximity;
+    overflow-y: scroll;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .crumbs {
+    position: fixed;
+    top: 1.4rem;
+    left: 1.6rem;
+    z-index: 9;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .crumbs a {
+    color: var(--blue);
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 6px 12px;
+    border-radius: 6px;
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--rule);
+  }
+  .crumbs a:hover { background: white; }
+
+  .module {
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 4rem max(2rem, 6vw) 5rem;
+    scroll-snap-align: start;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+  }
+  .module-inner { max-width: 1100px; margin: 0 auto; width: 100%; }
+
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+  }
+  h1 {
+    font-size: clamp(2.1rem, 5vw, 3.4rem);
+    line-height: 1.1;
+    margin: 0 0 1.4rem;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    color: var(--black);
+  }
+  h2 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    margin: 2.4rem 0 1rem;
+    letter-spacing: -0.01em;
+    font-weight: 700;
+    color: var(--black);
+  }
+  h3 {
+    font-size: 1.2rem;
+    margin: 2rem 0 0.6rem;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  p { color: var(--ink-soft); margin: 0.6em 0 1em; max-width: 75ch; font-weight: 400; }
+  strong { color: var(--ink); font-weight: 600; }
+
+  .gradient-text {
+    background: linear-gradient(120deg, var(--teal), var(--blue));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .hero {
+    background:
+      radial-gradient(1200px 500px at 80% -10%, rgba(66, 133, 140, 0.12), transparent 60%),
+      radial-gradient(900px 400px at 0% 80%, rgba(29, 112, 162, 0.10), transparent 60%);
+  }
+  .hero h1 small {
+    display: block;
+    font-size: 0.34em;
+    color: var(--ink-muted);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-top: 0.7em;
+    line-height: 1.5;
+  }
+  .hero .meta {
+    display: flex;
+    gap: 1.4rem;
+    flex-wrap: wrap;
+    color: var(--ink-muted);
+    font-size: 0.88rem;
+    margin-top: 2rem;
+  }
+  .meta b { color: var(--ink-soft); font-weight: 600; }
+
+  .dot-nav {
+    position: fixed;
+    right: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .dot-nav a {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--rule);
+    transition: all 0.25s ease;
+    display: block;
+    position: relative;
+  }
+  .dot-nav a.active {
+    background: linear-gradient(135deg, var(--teal), var(--blue));
+    transform: scale(1.4);
+  }
+  .dot-nav a::after {
+    content: attr(data-label);
+    position: absolute;
+    right: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--black);
+    color: var(--bg);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .dot-nav a:hover::after { opacity: 1; }
+  @media (max-width: 720px) { .dot-nav { display: none; } }
+
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .compare-card {
+    background: var(--bg-card);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 1.4rem;
+    box-shadow: var(--shadow);
+  }
+  .compare-card h4 {
+    margin: 0 0 0.6rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-muted);
+    font-weight: 700;
+  }
+  .compare-card.bad h4 { color: var(--red); }
+  .compare-card.good h4 { color: var(--green); }
+
+  .logo-demo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 2rem 1rem;
+  }
+  .logo-demo svg { display: block; }
+  .blur-fake {
+    filter: blur(0.6px);
+    image-rendering: -webkit-optimize-contrast;
+  }
+  .glow-correct {
+    filter:
+      drop-shadow(-1px -1px 3px rgba(66, 133, 140, 0.45))
+      drop-shadow(1px 1px 3px rgba(29, 112, 162, 0.45));
+  }
+  .glow-pixel {
+    filter:
+      blur(0.8px)
+      drop-shadow(-1px -1px 6px rgba(66, 133, 140, 0.45))
+      drop-shadow(1px 1px 6px rgba(29, 112, 162, 0.45));
+  }
+  .logo-demo small {
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 720px) {
+    .compare { grid-template-columns: 1fr; }
+  }
+
+  .code-translation {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 1.5rem;
+    margin: 1.5rem 0 2rem;
+    align-items: stretch;
+  }
+  .code-block {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    border-radius: 10px;
+    padding: 1.3rem 1.4rem;
+    font-family: ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace;
+    font-size: 0.84rem;
+    line-height: 1.55;
+    overflow-x: auto;
+    white-space: pre;
+    box-shadow: var(--shadow);
+  }
+  .code-block .file {
+    color: var(--code-comment);
+    font-size: 0.76rem;
+    margin-bottom: 0.7rem;
+    border-bottom: 1px solid #2a2a3e;
+    padding-bottom: 0.6rem;
+    display: flex;
+    justify-content: space-between;
+  }
+  .code-block .keyword { color: var(--code-keyword); }
+  .code-block .string { color: var(--code-string); }
+  .code-block .comment { color: var(--code-comment); font-style: italic; }
+  .code-block .tag { color: var(--code-tag); }
+  .code-block .attr { color: var(--code-attr); }
+  .code-block .fn { color: var(--code-fn); }
+  .code-block .removed {
+    background: var(--diff-remove-bg);
+    color: var(--diff-remove-ink);
+    display: block;
+    margin: 0 -1.4rem;
+    padding: 0 1.4rem;
+  }
+  .code-block .added {
+    background: var(--diff-add-bg);
+    color: var(--diff-add-ink);
+    display: block;
+    margin: 0 -1.4rem;
+    padding: 0 1.4rem;
+  }
+
+  .english {
+    background: var(--bg-card);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 1.3rem 1.4rem;
+    font-size: 0.94rem;
+    color: var(--ink-soft);
+    box-shadow: var(--shadow);
+  }
+  .english strong { color: var(--ink); }
+  .english p { margin: 0.4rem 0; }
+  .english h5 {
+    margin: 0 0 0.4rem;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-muted);
+    font-weight: 700;
+  }
+
+  @media (max-width: 880px) {
+    .code-translation { grid-template-columns: 1fr; }
+  }
+
+  .aha {
+    background: linear-gradient(120deg, rgba(66, 133, 140, 0.10), rgba(29, 112, 162, 0.10));
+    border: 1px solid rgba(66, 133, 140, 0.25);
+    border-radius: 12px;
+    padding: 1.5rem 1.6rem;
+    margin: 2rem 0;
+    position: relative;
+  }
+  .aha::before {
+    content: '★';
+    font-size: 1.6rem;
+    margin-right: 0.5rem;
+    background: linear-gradient(135deg, var(--teal), var(--blue));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .aha b {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.76rem;
+    color: var(--ink);
+    font-weight: 800;
+    margin-right: 0.6rem;
+  }
+  .aha p { margin: 0.4em 0 0; color: var(--ink-soft); display: inline; }
+
+  .pipeline {
+    background: var(--bg-card);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 2rem;
+    margin: 2rem 0;
+    box-shadow: var(--shadow);
+  }
+  .pipeline-flow {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    gap: 1rem;
+    align-items: stretch;
+    margin: 1.5rem 0;
+  }
+  .pipeline-stage {
+    background: var(--pastel-soft);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    border: 2px solid transparent;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+  .pipeline-stage.active {
+    border-color: var(--teal);
+    background: white;
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(66, 133, 140, 0.18);
+  }
+  .pipeline-stage.broken { border-color: var(--red); }
+  .pipeline-stage h5 {
+    margin: 0 0 0.4rem;
+    font-size: 0.95rem;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .pipeline-stage .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.4rem;
+  }
+  .badge.ok { background: rgba(57, 115, 103, 0.18); color: var(--green); }
+  .badge.fail { background: rgba(219, 58, 52, 0.16); color: var(--red); }
+  .pipeline-stage p { font-size: 0.82rem; margin: 0; color: var(--ink-muted); }
+  .arrow {
+    align-self: center;
+    color: var(--ink-muted);
+    font-size: 1.4rem;
+  }
+  @media (max-width: 880px) {
+    .pipeline-flow { grid-template-columns: 1fr; }
+    .arrow { transform: rotate(90deg); justify-self: center; }
+  }
+
+  .stage-explainer {
+    background: var(--pastel-soft);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin-top: 1rem;
+    border-left: 3px solid var(--teal);
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+  }
+  .stage-explainer strong { color: var(--ink); }
+
+  .quiz {
+    background: var(--bg-card);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 1.6rem 1.8rem;
+    margin: 2rem 0;
+    box-shadow: var(--shadow);
+  }
+  .quiz h4 {
+    margin: 0 0 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.76rem;
+    color: var(--teal);
+    font-weight: 800;
+  }
+  .quiz .q {
+    font-size: 1.02rem;
+    color: var(--ink);
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+  .quiz button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: var(--pastel-soft);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 0.85rem 1.1rem;
+    margin-bottom: 0.6rem;
+    font-size: 0.94rem;
+    color: var(--ink);
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.18s;
+    font-weight: 400;
+  }
+  .quiz button:hover { border-color: var(--teal); transform: translateX(4px); }
+  .quiz button.correct {
+    border-color: var(--green);
+    background: rgba(57, 115, 103, 0.14);
+  }
+  .quiz button.wrong {
+    border-color: var(--red);
+    background: rgba(219, 58, 52, 0.10);
+  }
+  .quiz button:disabled { cursor: default; opacity: 0.85; }
+  .quiz button:disabled:hover { transform: none; }
+  .quiz .explanation {
+    margin-top: 1rem;
+    padding: 1rem 1.2rem;
+    background: var(--pastel-soft);
+    border-radius: 10px;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    border-left: 3px solid var(--teal);
+    display: none;
+  }
+  .quiz .explanation.show { display: block; }
+
+  .anim-stage {
+    background: var(--bg-card);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 1.6rem 1.8rem;
+    margin: 1.5rem 0;
+    box-shadow: var(--shadow);
+  }
+  .anim-stage .controls {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 1rem;
+    align-items: center;
+  }
+  .anim-stage .step-btn {
+    background: linear-gradient(135deg, var(--teal), var(--blue));
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.88rem;
+  }
+  .anim-stage .step-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .anim-stage .step-btn.reset { background: var(--ink-muted); }
+  .anim-stage .progress {
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+    margin-left: auto;
+  }
+
+  .pattern-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.2rem;
+    margin: 1.5rem 0;
+  }
+  .pattern {
+    background: var(--bg-card);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 1.4rem;
+    box-shadow: var(--shadow);
+    transition: transform 0.18s;
+  }
+  .pattern:hover { transform: translateY(-3px); }
+  .pattern h4 {
+    margin: 0 0 0.6rem;
+    color: var(--ink);
+    font-size: 1.02rem;
+    font-weight: 700;
+  }
+  .pattern .num {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--teal), var(--blue));
+    color: white;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 28px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    margin-bottom: 0.6rem;
+  }
+  .pattern p { margin: 0; font-size: 0.9rem; }
+
+  .geo {
+    background: var(--bg-card);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 1.6rem;
+    margin: 1.5rem 0;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .geo svg { max-width: 100%; }
+  .geo-caption { font-size: 0.85rem; color: var(--ink-muted); margin-top: 0.8rem; text-align: center; }
+
+  .footer {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--rule);
+  }
+  .footer a { color: var(--blue); text-decoration: none; font-weight: 600; }
+
+  @media print {
+    .dot-nav, .crumbs, .quiz button, .step-btn { display: none !important; }
+    .module { min-height: auto; page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="crumbs"><a href="../">← reports</a></nav>
+
+<nav class="dot-nav" id="dotNav">
+  <a href="#m0" data-label="Intro" class="active"></a>
+  <a href="#m1" data-label="The Bug"></a>
+  <a href="#m2" data-label="Three Layers"></a>
+  <a href="#m3" data-label="Two Keys"></a>
+  <a href="#m4" data-label="Tooling Trap"></a>
+  <a href="#m5" data-label="Patterns"></a>
+</nav>
+
+<div class="course" id="course">
+
+<!-- ============================================================ -->
+<!-- MODULE 0: HERO                                                -->
+<!-- ============================================================ -->
+<section class="module hero" id="m0">
+  <div class="module-inner">
+    <div class="eyebrow">Engineering walkthrough · May 2026</div>
+    <h1>How three rasterization layers conspired against an <span class="gradient-text">SVG logo</span><small>A tiny logo was rendering blurry in Safari. Chrome, Firefox, Edge — all fine. Tracing the bug went through three distinct layers of the browser's SVG pipeline. The fix was small. The diagnostic story is the lesson.</small></h1>
+    <p>This walks through a real engineering investigation: a logo asset that looked subtly off in one browser, a diagnosis that started wrong and got refined through cheap experiments, and a two-step fix that exited two different broken layers in the rendering pipeline. By the end you'll know more about how browsers turn SVG into pixels than most front-end developers ever bother to learn — and you'll have a small toolkit of techniques that apply far beyond logo blur.</p>
+    <div class="meta">
+      <span><b>Stack:</b> Vue 3 · Vite · Vuetify</span>
+      <span><b>Affected browsers:</b> Safari (desktop + iOS)</span>
+      <span><b>Net change:</b> ~20 lines + 5 tests</span>
+      <span><b>Time to read:</b> ~15 min</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- MODULE 1: THE BUG                                             -->
+<!-- ============================================================ -->
+<section class="module" id="m1">
+  <div class="module-inner">
+    <div class="eyebrow">Module 1</div>
+    <h1>The bug that hides in Safari</h1>
+    <p>Most front-end bugs scream. This one whispered. Chrome, Firefox, Edge — all fine. iOS users and Mac Safari users were the only ones seeing a fuzzy glyph in the navbar where everyone else saw a crisp logo.</p>
+
+    <h2>What the user saw</h2>
+    <div class="compare">
+      <div class="compare-card good">
+        <h4>Chrome / Firefox</h4>
+        <div class="logo-demo">
+          <svg width="120" height="120" viewBox="0 0 74 74" class="glow-correct">
+            <g clip-path="url(#m1clip)">
+              <rect x="11" y="11" width="52" height="52" rx="2.51735" fill="white"/>
+              <polygon points="37,22 53,52 21,52" fill="#1D70A2"/>
+            </g>
+            <rect x="11" y="11" width="52" height="52" rx="2.51735" stroke="url(#m1grad)" stroke-width="2.51735" fill="none"/>
+            <defs>
+              <linearGradient id="m1grad" x1="9.68" y1="11" x2="1.91" y2="52" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#42858c"/><stop offset="1" stop-color="#1D70A2"/>
+              </linearGradient>
+              <clipPath id="m1clip"><rect x="11" y="11" width="52" height="52" rx="2.51735"/></clipPath>
+            </defs>
+          </svg>
+          <small>Crisp at every zoom level</small>
+        </div>
+      </div>
+      <div class="compare-card bad">
+        <h4>Safari (before the fix)</h4>
+        <div class="logo-demo">
+          <svg width="120" height="120" viewBox="0 0 74 74" class="glow-pixel blur-fake">
+            <g clip-path="url(#m1clip2)">
+              <rect x="11" y="11" width="52" height="52" rx="2.51735" fill="white"/>
+              <polygon points="37,22 53,52 21,52" fill="#1D70A2"/>
+            </g>
+            <rect x="11" y="11" width="52" height="52" rx="2.51735" stroke="url(#m1grad2)" stroke-width="2.51735" fill="none"/>
+            <defs>
+              <linearGradient id="m1grad2" x1="9.68" y1="11" x2="1.91" y2="52" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#42858c"/><stop offset="1" stop-color="#1D70A2"/>
+              </linearGradient>
+              <clipPath id="m1clip2"><rect x="11" y="11" width="52" height="52" rx="2.51735"/></clipPath>
+            </defs>
+          </svg>
+          <small>Soft on retina, fuzzy when zoomed</small>
+        </div>
+      </div>
+    </div>
+
+    <p>The simulation above is exaggerated for emphasis — the real bug was subtle, just barely "off." Subtle enough that the design team's first response was <em>"the logo looks fine to us"</em>, until the reporter clarified that the issue was specifically Safari on retina.</p>
+
+    <h2>Why this kind of bug is interesting</h2>
+    <p>It's the kind of bug that lives in the gap between what your code says and what the browser actually paints. Your source SVG is mathematically perfect — it's a vector, infinite resolution. But somewhere between the file on disk and the photons hitting your eye, Safari was making a quiet decision that <strong>nobody asked it to make</strong>.</p>
+
+    <p>The metaphor: it's like a perfume. The molecules are identical, but the chemistry of <em>your skin</em> changes how it smells. Safari's rendering pipeline is the skin chemistry. Same SVG, different result.</p>
+
+    <div class="aha">
+      <b>Aha</b><p>If a UI bug only reproduces in one browser, the bug is almost certainly in the <em>rendering pipeline</em>, not in your code. Stop staring at the component. Start tracing the path from byte to pixel.</p>
+    </div>
+
+    <div class="quiz" data-quiz="q1">
+      <h4>Quiz</h4>
+      <p class="q">Your team reports a UI bug that only reproduces in Safari on retina displays — never in Chrome. Where do you start your investigation?</p>
+      <button data-correct="false" data-explain="The component is the same code Chrome and Firefox successfully render. If they're fine, the component isn't the suspect.">A) The Vue component code</button>
+      <button data-correct="true" data-explain="Correct. When the same code produces different output in different browsers, the divergence is downstream of your code — in the rendering pipeline. Start there.">B) The browser's rendering pipeline</button>
+      <button data-correct="false" data-explain="A UI framework renders the same way for all consumers. If only Safari fails, it's a Safari-specific issue — likely in how Safari paints, not how the framework instantiates components.">C) The UI framework version</button>
+      <button data-correct="false" data-explain="The build produces a single bundle that's identical regardless of which browser receives it. Build issues would affect all browsers.">D) The build configuration</button>
+      <div class="explanation"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- MODULE 2: THREE LAYERS                                        -->
+<!-- ============================================================ -->
+<section class="module" id="m2">
+  <div class="module-inner">
+    <div class="eyebrow">Module 2</div>
+    <h1>Three layers where pixels can go wrong</h1>
+    <p>Browser rendering of an SVG isn't a single step. It's a multi-stage pipeline — and Safari has at least <strong>three</strong> distinct layers where rasterization can occur. Each is a candidate for "this is where my logo gets blurry." Debugging is layer-by-layer.</p>
+
+    <p>Think of it like a 3-stage espresso machine: beans go in, espresso comes out, and any of the three stages can grind your output too coarse. Pulling the lever harder doesn't help if the second stage is what's misbehaving.</p>
+
+    <div class="pipeline">
+      <h3 style="margin-top: 0;">The three layers (click each)</h3>
+      <div class="pipeline-flow">
+        <div class="pipeline-stage broken" id="stage1" onclick="selectStage(1)">
+          <div class="badge fail">Broken</div>
+          <h5>Layer 1</h5>
+          <p><code>&lt;img&gt;</code> raster path</p>
+        </div>
+        <div class="arrow">→</div>
+        <div class="pipeline-stage" id="stage2" onclick="selectStage(2)">
+          <div class="badge ok">OK</div>
+          <h5>Layer 2</h5>
+          <p>Inline SVG path engine</p>
+        </div>
+        <div class="arrow">→</div>
+        <div class="pipeline-stage broken" id="stage3" onclick="selectStage(3)">
+          <div class="badge fail">Broken</div>
+          <h5>Layer 3</h5>
+          <p>SVG <code>&lt;filter&gt;</code> internal raster</p>
+        </div>
+      </div>
+      <div class="stage-explainer" id="stageExplainer">
+        Click a stage above to see how Safari handles it.
+      </div>
+    </div>
+
+    <h2>The falsification test that broke the first diagnosis</h2>
+    <p>An earlier session had concluded: <em>"Safari rasterizes <code>&lt;img&gt;</code>-loaded SVGs at the SVG's intrinsic dimensions."</em> If that were true, bumping the SVG file's <code>width</code> and <code>height</code> attributes from 74 to 512 would force Safari to rasterize at 512×512 — a much higher resolution — and the logo would go crisp.</p>
+
+    <p>So we ran the experiment. Total time: 30 seconds.</p>
+
+    <div class="code-translation">
+      <div class="code-block">
+<span class="comment">/* In site-logo.svg */</span>
+
+<span class="removed"><span class="tag">&lt;svg</span> <span class="attr">width</span>=<span class="string">"74"</span> <span class="attr">height</span>=<span class="string">"74"</span> <span class="attr">viewBox</span>=<span class="string">"0 0 74 74"</span><span class="tag">&gt;</span></span>
+<span class="added"><span class="tag">&lt;svg</span> <span class="attr">width</span>=<span class="string">"512"</span> <span class="attr">height</span>=<span class="string">"512"</span> <span class="attr">viewBox</span>=<span class="string">"0 0 74 74"</span><span class="tag">&gt;</span></span>
+
+<span class="comment">/* viewBox stays the same so geometry */</span>
+<span class="comment">/* doesn't shift — only the intrinsic */</span>
+<span class="comment">/* dimensions change.                 */</span>
+      </div>
+      <div class="english">
+        <h5>What the test would prove</h5>
+        <p>If Safari really rasterizes at intrinsic dims, this hack should produce a noticeably crisper rendering. The <code>viewBox</code> stays at <code>0 0 74 74</code>, so the visible content doesn't shift; we're only changing the file-level width/height that the previous theory said matters.</p>
+        <h5>What actually happened</h5>
+        <p><strong>Zero visual change.</strong> Same blur, same pixelation. The hypothesis was falsified in seconds.</p>
+        <p>The actual mechanism: Safari rasterizes <code>&lt;img&gt;</code>-loaded SVGs at the <strong>consumer's CSS box size</strong> (52×52 in our case), <em>not</em> at the SVG's intrinsic dimensions. The 512 we wrote in the file was invisible to the layout engine.</p>
+      </div>
+    </div>
+
+    <div class="aha">
+      <b>Aha</b><p>When a fix at one layer doesn't change the output, you're at the wrong layer. The diagnostic test isn't <em>"did it work?"</em> — it's <em>"did anything change?"</em> A no-op fix is the loudest possible signal that you've misidentified the problem.</p>
+    </div>
+
+    <div class="quiz" data-quiz="q2">
+      <h4>Quiz</h4>
+      <p class="q">Bumping the SVG's intrinsic <code>width</code> and <code>height</code> from 74 to 512 (with <code>viewBox</code> unchanged) had ZERO effect on what Safari rendered. Why?</p>
+      <button data-correct="false" data-explain="Safari does respect SVG dimensions in some contexts — but not as the rasterization target for <code>&lt;img&gt;</code>-loaded SVGs.">A) Safari ignores SVG dimensions entirely</button>
+      <button data-correct="true" data-explain="Correct. Safari rasterizes <code>&lt;img&gt;</code>-loaded SVGs at the layout box dictated by the consumer (the <code>img</code> width/height in our case), not the file's intrinsic dimensions.">B) Safari rasterizes at the consumer's CSS box size, not the SVG's intrinsic dimensions</button>
+      <button data-correct="false" data-explain="The viewBox was unchanged in the test — that's exactly what we held constant. So that's not what differs.">C) The <code>viewBox</code> was wrong</button>
+      <button data-correct="false" data-explain="We hard-reloaded with caches disabled. That's a worthwhile thing to verify but it wasn't the cause here.">D) Browser cache</button>
+      <div class="explanation"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- MODULE 3: TWO LOCKED DOORS                                    -->
+<!-- ============================================================ -->
+<section class="module" id="m3">
+  <div class="module-inner">
+    <div class="eyebrow">Module 3</div>
+    <h1>Two locked doors, two keys</h1>
+    <p>The diagnosis revealed two separate broken layers. Inline-rendering the SVG fixes Layer 1. But it doesn't touch Layer 3 (the SVG <code>&lt;filter&gt;</code> internal rasterization) — that's still broken even when the surrounding SVG renders crisply.</p>
+
+    <p>So the fix is two steps. Each one a different key for a different door. The metaphor of "exit the rendering pipeline" was almost right; the precise version is <em>"exit the broken layer."</em></p>
+
+    <h2>Step 1 — Inline the SVG (kills Layer 1)</h2>
+    <p>Stop loading the SVG via <code>&lt;img&gt;</code> (which routes through Safari's image rasterizer). Render it inline as DOM, where the SVG path engine takes over. The path engine is DPI-aware — vector content stays crisp at any zoom or device pixel ratio.</p>
+
+    <p>We added <code>vite-svg-loader</code> as a build-time plugin. It transforms <code>?component</code> imports into Vue components that render the SVG markup directly into the DOM.</p>
+
+    <div class="code-translation">
+      <div class="code-block">
+<span class="file"><span>vite.config.mjs</span><span>plugin registration</span></span>
+<span class="keyword">import</span> svgLoader <span class="keyword">from</span> <span class="string">"vite-svg-loader"</span>;
+
+<span class="comment">// ...inside plugins: [...]</span>
+<span class="added">  <span class="fn">svgLoader</span>({
+    svgoConfig: {
+      plugins: [{
+        name: <span class="string">"preset-default"</span>,
+        params: { overrides: { removeViewBox: <span class="keyword">false</span> } }
+      }]
+    }
+  }),</span>
+      </div>
+      <div class="english">
+        <h5>What's happening</h5>
+        <p>We register a Vite plugin that runs at build time. It scans for <code>?component</code> SVG imports and rewrites them as Vue components.</p>
+        <h5>The <code>removeViewBox: false</code> override</h5>
+        <p>By default the plugin runs SVGO (an SVG optimizer) which has an aggressive plugin called <code>removeViewBox</code>. It strips the <code>viewBox</code> attribute when <code>width</code>/<code>height</code> are present.</p>
+        <p>That's a <strong>well-known footgun</strong>: any consumer that wants to render at a different size than the file's intrinsic dimensions will get content rendered at literal coordinates and clipped. We disable it here. <em>(Module 4 covers this trap in detail — it bit us mid-fix.)</em></p>
+      </div>
+    </div>
+
+    <div class="code-translation">
+      <div class="code-block">
+<span class="file"><span>src/components/SiteLogo.vue</span><span>NEW · 12 lines</span></span>
+<span class="tag">&lt;template&gt;</span>
+  <span class="tag">&lt;LogoSvg</span>
+    <span class="attr">:width</span>=<span class="string">"size"</span>
+    <span class="attr">:height</span>=<span class="string">"size"</span>
+    <span class="attr">class</span>=<span class="string">"site-logo"</span> <span class="tag">/&gt;</span>
+<span class="tag">&lt;/template&gt;</span>
+
+<span class="tag">&lt;script setup lang="ts"&gt;</span>
+<span class="keyword">import</span> LogoSvg <span class="keyword">from</span>
+  <span class="string">"./site-logo.svg?component"</span>;
+
+<span class="keyword">interface</span> Props { size?: <span class="keyword">number</span>; }
+<span class="fn">withDefaults</span>(<span class="fn">defineProps</span>&lt;Props&gt;(),
+  { size: <span class="keyword">52</span> });
+<span class="tag">&lt;/script&gt;</span>
+      </div>
+      <div class="english">
+        <h5>The wrapper component</h5>
+        <p><code>SiteLogo</code> imports the SVG via <code>?component</code> — the magic suffix that triggers <code>vite-svg-loader</code>. The result is a Vue component (<code>LogoSvg</code>) that renders the SVG markup inline into the DOM.</p>
+        <h5>Why a wrapper at all?</h5>
+        <p>Two consumers (mobile + desktop nav) need the logo. Without a wrapper, each would have to know about the asset path and the component import. With it, they just say <code>&lt;SiteLogo :size="42" /&gt;</code> and forget the rest.</p>
+        <h5>Single root + <code>inheritAttrs</code></h5>
+        <p>Because <code>LogoSvg</code> is the single root element and Vue 3's default is <code>inheritAttrs: true</code>, the parent's <code>@click</code> automatically attaches to the SVG root. No <code>defineEmits</code> needed.</p>
+      </div>
+    </div>
+
+    <h2>Step 2 — Move the shadow to CSS (kills Layer 3)</h2>
+    <p>Even with inline SVG rendering, the <code>&lt;filter&gt;</code> element still rasterizes through Safari's filter buffer at <em>user-space</em> (viewBox) resolution — not device-pixel resolution. So even on an otherwise crisp SVG, the filter output is fuzzy. The white glyph itself stays sharp; the dual-tone glow around it diffuses.</p>
+
+    <p>The fix: strip the <code>&lt;filter&gt;</code> element from the SVG file. Recreate the same dual-tone shadow as CSS <code>filter: drop-shadow()</code>. CSS filters are applied at the compositor layer — at device resolution. DPI-aware, just like the path engine.</p>
+
+    <div class="code-translation">
+      <div class="code-block">
+<span class="file"><span>src/components/SiteLogo.vue</span><span>scoped style</span></span>
+<span class="tag">&lt;style scoped&gt;</span>
+.site-logo {
+  filter:
+    <span class="fn">drop-shadow</span>(-1px -1px 3px
+      <span class="fn">rgba</span>(66, 133, 140, 0.45))
+    <span class="fn">drop-shadow</span>(1px 1px 3px
+      <span class="fn">rgba</span>(29, 112, 162, 0.45));
+}
+<span class="tag">&lt;/style&gt;</span>
+      </div>
+      <div class="english">
+        <h5>Two stacked drop-shadows</h5>
+        <p>The first drop-shadow nudges the logo up-and-left with one tint. The second nudges it down-and-right with another. Stacked, they produce the same dual-tone glow as the original SVG <code>&lt;filter&gt;</code> — but rendered at device resolution because CSS filters operate at the compositor layer.</p>
+        <h5>Why <code>drop-shadow</code> and not <code>box-shadow</code>?</h5>
+        <p><code>drop-shadow</code> follows the <strong>alpha silhouette</strong> of the element — including the SVG's actual rounded shape. <code>box-shadow</code> would follow the bounding box, producing a square halo around the SVG's transparent padding. Wrong primitive for vector-shaped elements.</p>
+        <h5>The same recipe failed previously</h5>
+        <p>An earlier attempt tried this exact approach with the <em>old</em> <code>&lt;img&gt;</code>-loaded SVG. It "failed" because the underlying image was already rasterized at low resolution — a CSS shadow on a fuzzy base is still fuzzy. Now it works because the base SVG is crisp via inline rendering.</p>
+      </div>
+    </div>
+
+    <div class="aha">
+      <b>Aha</b><p>A fix can be correct in cause but wrong for the substrate. When the substrate changes, re-evaluate fixes you previously rejected. The "failed Option B" became the correct second step — same recipe, different base.</p>
+    </div>
+
+    <div class="quiz" data-quiz="q3">
+      <h4>Quiz</h4>
+      <p class="q">We removed the SVG <code>&lt;filter&gt;</code> element and recreated the same dual-tone shadow as CSS <code>drop-shadow()</code>. The same approach was tried earlier and concluded not to work. Why does it succeed now?</p>
+      <button data-correct="false" data-explain="The CSS recipe is essentially identical to the earlier attempt. The recipe didn't change.">A) The CSS recipe is fundamentally different</button>
+      <button data-correct="true" data-explain="Correct. Earlier the SVG was loaded via <code>&lt;img&gt;</code>, so the base was already low-resolution. A CSS shadow on a fuzzy base is still fuzzy. Now the SVG is rendered inline at device pixels, so the base is crisp — and CSS drop-shadow operates at device resolution too. Both layers are now device-aligned.">B) The base SVG renders at device pixels now (inline) instead of through the broken raster path</button>
+      <button data-correct="false" data-explain="Safari hasn't shipped a fix for either of these layers in the relevant period. The browser's behavior is the same.">C) Safari was updated</button>
+      <button data-correct="false" data-explain="Vue's caching behavior is unrelated to how the rendering pipeline rasterizes SVGs.">D) Vue's component caching</button>
+      <div class="explanation"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- MODULE 4: TOOLING TRAP                                        -->
+<!-- ============================================================ -->
+<section class="module" id="m4">
+  <div class="module-inner">
+    <div class="eyebrow">Module 4</div>
+    <h1>The silent tooling sabotage</h1>
+    <p>Halfway through the fix, the inline SVG suddenly rendered with the visible card extending beyond its container — clipped on the right and bottom. The source SVG file clearly had <code>viewBox="0 0 74 74"</code>. The DOM, inspected in WebKit Inspector, showed:</p>
+
+    <div class="code-block" style="margin: 1.5rem 0;">
+<span class="comment">// Rendered DOM (NOT what we wrote)</span>
+<span class="tag">&lt;svg</span> <span class="attr">width</span>=<span class="string">"52"</span> <span class="attr">height</span>=<span class="string">"52"</span> <span class="attr">fill</span>=<span class="string">"none"</span><span class="tag">&gt;</span>
+  <span class="comment">// 👀 viewBox is GONE</span>
+  <span class="tag">&lt;rect</span> <span class="attr">x</span>=<span class="string">"11"</span> <span class="attr">y</span>=<span class="string">"11"</span> <span class="attr">width</span>=<span class="string">"52"</span> <span class="attr">height</span>=<span class="string">"52"</span><span class="tag">/&gt;</span>
+  <span class="comment">// rect at coords (11,11) to (63,63) inside a 52×52 box → clipped</span>
+<span class="tag">&lt;/svg&gt;</span>
+    </div>
+
+    <p>Our source had <code>viewBox</code>. The DOM didn't. Something between source and browser was stripping it. That something was <strong>SVGO</strong>, an SVG optimizer that <code>vite-svg-loader</code> runs by default.</p>
+
+    <p>SVGO ships with a plugin called <code>removeViewBox</code>. Its logic: <em>"if width and height are present, viewBox is redundant — remove it."</em> Sometimes true. In our case, dangerously false. The moment a consumer specifies different render dimensions than the SVG's intrinsic ones (which is exactly what we do — we render a 74-coord viewBox into a 52-px box), the missing viewBox makes content render at literal coordinates and overflow.</p>
+
+    <p>The metaphor: a photo lab technician who silently "improves" your photos before printing. Your originals look fine. The prints look weird. You can't figure out why until you watch the technician work.</p>
+
+    <div class="code-translation">
+      <div class="code-block">
+<span class="file"><span>vite.config.mjs</span><span>SVGO override</span></span>
+<span class="fn">svgLoader</span>({
+  svgoConfig: {
+    plugins: [
+      {
+        name: <span class="string">"preset-default"</span>,
+        params: {
+          overrides: {
+            <span class="added">removeViewBox: <span class="keyword">false</span></span>
+          }
+        }
+      }
+    ]
+  }
+})
+      </div>
+      <div class="english">
+        <h5>The fix in one line</h5>
+        <p><code>removeViewBox: false</code> opts out of the harmful default. The rest of SVGO's optimizations still run (whitespace, redundant attrs, etc.) — we only neutralize the one plugin that breaks our use case.</p>
+        <h5>Why it's structured this way</h5>
+        <p>SVGO ships a "preset-default" plugin bundle. To customize one plugin's behavior, you pass <code>overrides</code> on that preset rather than defining your own plugin list. Less brittle when SVGO releases new defaults.</p>
+        <h5>Vitest config got the same treatment</h5>
+        <p>The repo has a <strong>separate</strong> <code>vitest.config.mjs</code> from <code>vite.config.mjs</code>. Tests don't inherit the build config — we had to register the same plugin (with the same SVGO override) in both. Easy to miss until tests fail with "cannot resolve <code>?component</code> import."</p>
+      </div>
+    </div>
+
+    <div class="aha">
+      <b>Aha</b><p>Build-time tooling has invisible opinions. They won't show up in your source code, but they shape what reaches the browser. New debug heuristic: <strong>when source markup ≠ rendered DOM, suspect the build chain before suspecting a runtime bug.</strong></p>
+    </div>
+
+    <h2>The geometry that revealed the bug</h2>
+    <div class="geo">
+      <svg width="540" height="180" viewBox="0 0 540 180" style="max-width: 100%;">
+        <text x="60" y="20" font-size="12" fill="#7a8388" font-family="sans-serif" text-anchor="middle">With viewBox (correct)</text>
+        <rect x="20" y="35" width="100" height="100" fill="none" stroke="#42858c" stroke-width="2" stroke-dasharray="4,4"/>
+        <text x="125" y="55" font-size="10" fill="#7a8388" font-family="sans-serif">52×52 box</text>
+        <rect x="35" y="50" width="70" height="70" fill="rgba(29,112,162,0.25)" stroke="#1D70A2" stroke-width="2"/>
+        <text x="70" y="92" font-size="10" fill="#2d3236" font-family="sans-serif" text-anchor="middle">card (scaled)</text>
+
+        <text x="200" y="20" font-size="12" fill="#7a8388" font-family="sans-serif" text-anchor="middle">SVGO strips viewBox</text>
+        <text x="220" y="95" font-size="22" fill="#db3a34" font-family="sans-serif" text-anchor="middle">→</text>
+
+        <text x="395" y="20" font-size="12" fill="#7a8388" font-family="sans-serif" text-anchor="middle">Without viewBox (bug)</text>
+        <rect x="290" y="35" width="100" height="100" fill="none" stroke="#42858c" stroke-width="2" stroke-dasharray="4,4"/>
+        <text x="395" y="55" font-size="10" fill="#7a8388" font-family="sans-serif">52×52 box</text>
+        <rect x="305" y="50" width="100" height="100" fill="rgba(219,58,52,0.20)" stroke="#db3a34" stroke-width="2"/>
+        <line x1="290" y1="135" x2="450" y2="135" stroke="#db3a34" stroke-width="1" stroke-dasharray="2,2"/>
+        <line x1="390" y1="35" x2="390" y2="160" stroke="#db3a34" stroke-width="1" stroke-dasharray="2,2"/>
+        <text x="430" y="170" font-size="10" fill="#db3a34" font-family="sans-serif">overflow</text>
+
+        <text x="500" y="80" font-size="11" fill="#2d3236" font-family="sans-serif" text-anchor="middle">card at</text>
+        <text x="500" y="93" font-size="11" fill="#2d3236" font-family="sans-serif" text-anchor="middle">(11,11)→(63,63)</text>
+        <text x="500" y="106" font-size="11" fill="#2d3236" font-family="sans-serif" text-anchor="middle">in a 52-wide svg</text>
+      </svg>
+      <div class="geo-caption">When viewBox is preserved, the 74-coord card scales proportionally to fit the 52-px container. When viewBox is stripped, the card renders at literal coordinates — extending from (11,11) to (63,63) — and clips on the right/bottom.</div>
+    </div>
+
+    <div class="quiz" data-quiz="q4">
+      <h4>Quiz</h4>
+      <p class="q">You're debugging a UI bug. You can clearly see <code>viewBox="0 0 74 74"</code> in the source SVG file, but Inspector shows the rendered <code>&lt;svg&gt;</code> in the DOM has no <code>viewBox</code> attribute. What's the most likely cause?</p>
+      <button data-correct="false" data-explain="Browser bugs that selectively strip valid attributes are extraordinarily rare. Almost never the right first hypothesis.">A) A Safari/Chrome rendering bug</button>
+      <button data-correct="true" data-explain="Correct. When source markup differs from rendered DOM, a build-time transform is the most common culprit. SVGO, image optimizers, CSS minifiers — they all rewrite output silently.">B) A build-time transform stripped it</button>
+      <button data-correct="false" data-explain="Vue's template compiler doesn't strip valid SVG attributes. Vue passes through SVG markup faithfully.">C) Vue's template compiler removed it</button>
+      <button data-correct="false" data-explain="HTTP transport doesn't modify markup. Files arrive at the browser with their attributes intact.">D) Network compression</button>
+      <div class="explanation"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- MODULE 5: PATTERNS                                            -->
+<!-- ============================================================ -->
+<section class="module" id="m5">
+  <div class="module-inner">
+    <div class="eyebrow">Module 5</div>
+    <h1>Patterns worth stealing</h1>
+    <p>The actual fix is small. The reusable lessons are not. Here's what survives outside this specific bug, ready to be picked up next time you're staring at something weird.</p>
+
+    <div class="pattern-grid">
+      <div class="pattern">
+        <div class="num">1</div>
+        <h4>The wrapper component</h4>
+        <p><code>SiteLogo.vue</code> is 12 lines. It owns the asset, exposes a clean <code>size</code> prop, forwards <code>class</code>/<code>@click</code> via Vue's default <code>inheritAttrs</code>. Two consumers; one source of truth. Single-element root + no <code>defineEmits</code> = nothing to maintain.</p>
+        <p style="margin-top: 0.6rem;"><strong>When to use:</strong> any time an asset (icon, illustration, embed) appears in 2+ places.</p>
+      </div>
+
+      <div class="pattern">
+        <div class="num">2</div>
+        <h4>The 30-second falsification test</h4>
+        <p>Before building "the real fix," write a 30-second hack that <em>should</em> work if your hypothesis is right. The 512×512 width bump took half a minute and falsified an entire previous diagnosis.</p>
+        <p style="margin-top: 0.6rem;"><strong>When to use:</strong> any time you're tempted to commit to a fix based on reasoning alone.</p>
+      </div>
+
+      <div class="pattern">
+        <div class="num">3</div>
+        <h4>Coordinate-system mapping discipline</h4>
+        <p>SVG <code>stdDeviation=4.05</code> is in user-space (viewBox) units. CSS <code>blur(8px)</code> is in render-space. With a 74:52 viewBox-to-render scale, those don't translate 1:1. <strong>Re-derive the conversion every time the substrate changes.</strong></p>
+        <p style="margin-top: 0.6rem;"><strong>When to use:</strong> any visual recipe (shadows, blurs, scaling) that crosses unit systems.</p>
+      </div>
+
+      <div class="pattern">
+        <div class="num">4</div>
+        <h4>"Exit the broken layer"</h4>
+        <p>An earlier framing was: "exit the pipeline." Refined: <strong>exit the broken layer</strong>. Pipelines have multiple rasterization layers; identifying which one is broken matters. CSS <code>drop-shadow</code> exits SVG-filter-buffer; inline SVG exits <code>&lt;img&gt;</code>-rasterizer. They're different exits.</p>
+        <p style="margin-top: 0.6rem;"><strong>When to use:</strong> any rendering bug where one fix didn't work and you're tempted to give up.</p>
+      </div>
+
+      <div class="pattern">
+        <div class="num">5</div>
+        <h4>Source ≠ DOM heuristic</h4>
+        <p>When what you wrote isn't what the browser shows, the gap is a build transform. SVGO, image pipelines, autoprefixers — they all silently rewrite output. Look at the build chain before staring at runtime code.</p>
+        <p style="margin-top: 0.6rem;"><strong>When to use:</strong> Inspector shows missing attributes you wrote, or different values than your source declares.</p>
+      </div>
+
+      <div class="pattern">
+        <div class="num">6</div>
+        <h4>Tiny components reach 100%</h4>
+        <p>The wrapper hit 100% statement/branch/function coverage with 5 tests in ~30 lines of test code. Possible only because the component does ONE thing: forward props to an imported asset. Smart components rarely reach 80%; dumb wrappers hit 100% effortlessly.</p>
+        <p style="margin-top: 0.6rem;"><strong>When to use:</strong> consider extracting a wrapper for any component that's hard to test — the wrapper concentrates the testable surface.</p>
+      </div>
+    </div>
+
+    <h2>The full timeline</h2>
+    <p>The shape of the work, in order. The diagnostic story made concrete:</p>
+    <div class="anim-stage" id="timeline">
+      <div id="timelineStep">
+        <h3 id="tlTitle">Click "Next" to walk through the work</h3>
+        <p id="tlBody" style="min-height: 5rem;">The fix landed in 4 commits. Each one captures a specific decision or correction. Walking through them in order reveals the shape of the work.</p>
+      </div>
+      <div class="controls">
+        <button class="step-btn" id="tlPrev" onclick="tlStep(-1)" disabled>← Previous</button>
+        <button class="step-btn" id="tlNext" onclick="tlStep(1)">Next →</button>
+        <button class="step-btn reset" onclick="tlReset()">Reset</button>
+        <span class="progress" id="tlProgress">Step 0 / 4</span>
+      </div>
+    </div>
+
+    <div class="quiz" data-quiz="q5">
+      <h4>Quiz</h4>
+      <p class="q">You're adding a new <code>HeaderIcon</code> wrapper component, modeled on the pattern above. You want clicks to work and you want CSS classes from the consumer to merge with your component's own. What's the FIRST thing you'd add to the template?</p>
+      <button data-correct="false" data-explain="Adding a custom filter is one of the visual concerns, but not what enables click forwarding or class merging. That's what the structure of the template controls.">A) A scoped filter style</button>
+      <button data-correct="true" data-explain="Correct. A single root element with Vue's default inheritAttrs auto-merges classes from the consumer and forwards <code>@click</code> listeners. No defineEmits, no manual class binding needed. That's the foundation.">B) A single-element root that auto-forwards class and listeners via inheritAttrs</button>
+      <button data-correct="false" data-explain="defineEmits is for explicitly declared events. For native DOM events like click, inheritAttrs already handles forwarding to a single root. defineEmits is unnecessary ceremony here.">C) <code>defineEmits</code> for click events</button>
+      <button data-correct="false" data-explain="Lazy loading is an orthogonal concern. The wrapper pattern is about API consolidation; lazy loading is about bundle splitting.">D) An async lazy loader</button>
+      <div class="explanation"></div>
+    </div>
+
+    <div class="aha">
+      <b>One last thing</b><p>Total net source change: roughly 20 lines of production code + 30 lines of tests. The diagnostic and learning portion was multiples larger. That ratio is normal for layer-stacked rendering bugs and worth getting comfortable with — the temptation to skip the diagnostic phase is what produces the wrong-fix outcome.</p>
+    </div>
+  </div>
+</section>
+
+<div class="footer">
+  A walkthrough of how three rasterization layers in browser SVG rendering interact — and the small fix that resolved a Safari-specific blur.<br>
+  Single HTML file. No tracking, no servers, no dependencies.
+</div>
+
+</div>
+
+<script>
+  const stageInfo = {
+    1: {
+      title: 'Layer 1 — <code>&lt;img&gt;</code> raster path',
+      body: '<strong>Broken in Safari.</strong> When an SVG is loaded via an <code>&lt;img&gt;</code> element (which is what most UI frameworks\' image components use under the hood), Safari rasterizes the SVG to a bitmap at the <strong>rendered CSS box size</strong>, then upscales the bitmap to device pixels. On a 52-px CSS box at DPR 2, that\'s a 52×52 bitmap upscaled to 104×104 device pixels — a 2× upscale of a low-res raster, which is visible blur. Chrome and Firefox re-rasterize at DPR for SVG sources. Safari does not.'
+    },
+    2: {
+      title: 'Layer 2 — Inline SVG path engine',
+      body: '<strong>Works correctly.</strong> When SVG markup is inline in the DOM (i.e., the actual <code>&lt;svg&gt;</code> element lives in your HTML, not loaded as an <code>&lt;img src&gt;</code>), the browser routes rendering through its SVG path engine. The path engine is DPI-aware — strokes, fills, gradients, paths all render at device pixel resolution. Vector content stays crisp at any zoom or DPR. This is what we route to with <code>vite-svg-loader</code>.'
+    },
+    3: {
+      title: 'Layer 3 — SVG <code>&lt;filter&gt;</code> internal raster',
+      body: '<strong>Also broken in Safari.</strong> When an SVG contains a <code>&lt;filter&gt;</code> element (e.g., for drop shadows via <code>feGaussianBlur</code>), Safari rasterizes the filter region <em>within the filter pipeline</em> at user-space (viewBox) resolution — not device-pixel resolution. So even on an inline SVG that\'s otherwise crisp, the filter output is fuzzy. We exit this layer by stripping the SVG-internal filter and recreating the shadow as CSS <code>drop-shadow()</code>, which is applied at the compositor at device resolution.'
+    }
+  };
+  function selectStage(n) {
+    [1,2,3].forEach(i => document.getElementById('stage'+i).classList.toggle('active', i === n));
+    const info = stageInfo[n];
+    document.getElementById('stageExplainer').innerHTML = '<h5 style="margin: 0 0 0.4rem; color: var(--ink); font-weight: 700;">' + info.title + '</h5>' + info.body;
+  }
+
+  document.querySelectorAll('.quiz').forEach(quiz => {
+    const buttons = quiz.querySelectorAll('button');
+    const explanation = quiz.querySelector('.explanation');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (quiz.dataset.answered) return;
+        quiz.dataset.answered = 'yes';
+        const correct = btn.dataset.correct === 'true';
+        btn.classList.add(correct ? 'correct' : 'wrong');
+        if (!correct) {
+          buttons.forEach(b => { if (b.dataset.correct === 'true') b.classList.add('correct'); });
+        }
+        buttons.forEach(b => b.disabled = true);
+        explanation.innerHTML = '<strong>' + (correct ? '✓ Correct.' : '✗ Not quite.') + '</strong> ' + btn.dataset.explain;
+        explanation.classList.add('show');
+      });
+    });
+  });
+
+  const dots = document.querySelectorAll('.dot-nav a');
+  const sections = document.querySelectorAll('.module');
+  const courseEl = document.getElementById('course');
+  function updateDots() {
+    let activeIdx = 0;
+    sections.forEach((s, i) => {
+      const r = s.getBoundingClientRect();
+      if (r.top <= window.innerHeight * 0.4) activeIdx = i;
+    });
+    dots.forEach((d, i) => d.classList.toggle('active', i === activeIdx));
+  }
+  courseEl.addEventListener('scroll', updateDots);
+  window.addEventListener('scroll', updateDots);
+
+  const timeline = [
+    {
+      title: 'Step 0: where we started',
+      body: 'A previous attempt at this bug had been reverted. The entry point: a CSS-shadow recreation that didn\'t work because the underlying <code>&lt;img&gt;</code> rasterization was still broken. We had to rebuild the diagnosis from scratch.'
+    },
+    {
+      title: 'Step 1: inline the SVG',
+      body: 'The structural fix. Added <code>vite-svg-loader</code> as a devDep, configured the plugin in <code>vite.config.mjs</code> with the <code>removeViewBox</code> override, created the wrapper component, moved the SVG out of <code>public/</code> into <code>src/components/</code>, swapped the two nav components from <code>&lt;v-img&gt;</code> to the new wrapper. ~150 lines added, ~17 removed.'
+    },
+    {
+      title: 'Step 2: fix the shadow',
+      body: 'After verifying the inline SVG was crisp but the dual-tone glow was still slightly fuzzy, removed the SVG\'s internal <code>&lt;filter&gt;</code> element and the wrapping <code>&lt;g filter="url(...)"&gt;</code>. Added a CSS <code>filter: drop-shadow()</code> recipe to the wrapper\'s scoped style. The same recipe that "failed" earlier — now succeeding because the substrate is right.'
+    },
+    {
+      title: 'Step 3: happy-path coverage',
+      body: 'Mirrored the <code>vite-svg-loader</code> plugin into <code>vitest.config.mjs</code> (separate config from <code>vite.config.mjs</code> — easy to miss). Wrote 5 vitest specs covering default size, custom size forwarding, class application, <code>viewBox</code> preservation, and click event forwarding via <code>inheritAttrs</code>. Result: 100% statements/branches/functions on the wrapper component.'
+    },
+    {
+      title: 'Step 4: chase the lint failure',
+      body: 'CI failed at <code>yarn run lint</code> with <em>"27 problems (0 errors, 27 warnings)"</em> and exit code 1. Misleading: the warning count was pre-existing across the repo. The actual cause was Prettier\'s <code>--check</code> step, which runs after ESLint and exits 1 when files aren\'t formatted. <code>yarn lint:fix</code> reformatted the hand-typed code; pipeline went green.'
+    }
+  ];
+  let tlIdx = 0;
+  function tlRender() {
+    const step = timeline[tlIdx];
+    document.getElementById('tlTitle').innerHTML = step.title;
+    document.getElementById('tlBody').innerHTML = step.body;
+    document.getElementById('tlPrev').disabled = (tlIdx === 0);
+    document.getElementById('tlNext').disabled = (tlIdx === timeline.length - 1);
+    document.getElementById('tlProgress').textContent = 'Step ' + tlIdx + ' / ' + (timeline.length - 1);
+  }
+  function tlStep(d) {
+    tlIdx = Math.max(0, Math.min(timeline.length - 1, tlIdx + d));
+    tlRender();
+  }
+  function tlReset() { tlIdx = 0; tlRender(); }
+  tlRender();
+
+  selectStage(1);
+</script>
+
+</body>
+</html>
