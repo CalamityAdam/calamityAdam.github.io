@@ -25,6 +25,7 @@ git -C /Users/adam.sisk/dev/repos/adamsisk/calamityAdam.github.io push
 | `index.js` | Landing JS (currently minimal) |
 | `questions/` | Standalone conversation visualizer (self-contained HTML with embedded styles) |
 | `reports/` | Standalone analysis reports — **unlinked from the main nav, accessed by direct URL** |
+| `artifacts/` | Standalone engineering walkthroughs / blog posts — same convention as `reports/` (unlisted, direct URL) |
 | `assets/` | Resume PDF, headshot |
 | `favicon.svg` | Site icon — referenced as `../favicon.svg` from subpages |
 | `CNAME` | `adumb.dev` — required by GitHub Pages for the custom domain |
@@ -32,15 +33,20 @@ git -C /Users/adam.sisk/dev/repos/adamsisk/calamityAdam.github.io push
 ## Conventions
 
 ### Subpages are self-contained
-The `questions/` and `reports/` pages each embed their own `<style>` block instead of importing `style.css`. They reuse the site's color palette (declared inline) and Montserrat font, but otherwise stand alone. This keeps the landing's CSS small and lets each subpage iterate without risk of breaking the homepage.
+The `questions/`, `reports/`, and `artifacts/` pages each embed their own `<style>` block instead of importing `style.css`. They reuse the site's color palette (declared inline) and Montserrat font, but otherwise stand alone. This keeps the landing's CSS small and lets each subpage iterate without risk of breaking the homepage.
 
-### Reports are "unlisted, not private"
-`reports/` has no link from `index.html`. Anyone with the URL can read them, and a search crawler that finds the URL may index them. Treat this as obscurity, not access control — never put anything Ramsey-internal, PII, or otherwise sensitive in here.
+### Reports / Artifacts are "unlisted, not private"
+Neither `reports/` nor `artifacts/` is linked from `index.html`. Anyone with the URL can read them, and a search crawler that finds the URL may index them. Treat this as obscurity, not access control — never put anything Ramsey-internal, PII, or otherwise sensitive in here.
 
-To add a report:
-1. Drop the self-contained HTML into `reports/` with a URL-friendly slug (`kebab-case.html`)
-2. Add a card to `reports/index.html` — copy an existing `<li class="report-card">` and update title/date/description
-3. Commit and push
+**`reports/` vs `artifacts/`:**
+- `reports/` — analysis dashboards, data write-ups, ad-hoc investigations with charts and numbers. Quieter audience, often technical-internal in tone.
+- `artifacts/` — blog-post-flavored engineering walkthroughs. Long-form, narrative, intended for sharing. Each post is a self-contained HTML with hero, modules, OG meta tags, JSON-LD `BlogPosting`, canonical URL, footnotes, and an author footer. Treat as if going on the public web (because it is).
+
+To add a report or artifact:
+1. Drop the self-contained HTML into `reports/` or `artifacts/` with a URL-friendly slug (`kebab-case.html`)
+2. Add a card to the corresponding `index.html` — copy an existing `<li class="report-card">` / `<li class="artifact-card">` and update title/date/description
+3. For artifacts: also add OG/Twitter meta + JSON-LD with absolute `https://adumb.dev/...` URLs, and an OG image (1200×630, can be SVG)
+4. Commit and push
 
 ### Nav grid is hardcoded
 `style.css` uses `grid-template-columns: repeat(N, 1fr)` for the homepage nav — `N` is the literal link count. If you add or remove a nav item, update the column count too.

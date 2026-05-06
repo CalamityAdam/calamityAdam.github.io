@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f5f1e8"/>
+      <stop offset="1" stop-color="#e3ddc7"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#42858c"/>
+      <stop offset="1" stop-color="#1D70A2"/>
+    </linearGradient>
+    <linearGradient id="logoStroke" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#42858c"/>
+      <stop offset="1" stop-color="#1D70A2"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Decorative logo demo card -->
+  <g transform="translate(900, 175)">
+    <rect x="0" y="0" width="220" height="220" rx="14" fill="white"/>
+    <rect x="0" y="0" width="220" height="220" rx="14" stroke="url(#logoStroke)" stroke-width="9" fill="none"/>
+    <polygon points="110,55 185,180 35,180" fill="#1D70A2"/>
+  </g>
+
+  <!-- Eyebrow -->
+  <text x="80" y="180" font-family="Montserrat, -apple-system, sans-serif" font-size="22" font-weight="600" fill="#7a8388" letter-spacing="3">ENGINEERING WALKTHROUGH</text>
+
+  <!-- Main title -->
+  <text x="80" y="270" font-family="Montserrat, -apple-system, sans-serif" font-size="62" font-weight="800" fill="#35393c">How three rasterization</text>
+  <text x="80" y="345" font-family="Montserrat, -apple-system, sans-serif" font-size="62" font-weight="800" fill="#35393c">layers conspired against</text>
+  <text x="80" y="420" font-family="Montserrat, -apple-system, sans-serif" font-size="62" font-weight="800" fill="url(#accent)">an SVG logo</text>
+
+  <!-- Author -->
+  <text x="80" y="540" font-family="Montserrat, -apple-system, sans-serif" font-size="22" font-weight="600" fill="#42858c">Adam Sisk · adumb.dev</text>
+</svg>

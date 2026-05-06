@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reports — Adam Sisk</title>
+  <title>Artifacts — Adam Sisk</title>
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link href="https://fonts.googleapis.com/css?family=Montserrat:200,400,800&display=swap" rel="stylesheet">
   <style>
@@ -58,13 +58,13 @@
       max-width: 56ch;
     }
 
-    .report-list {
+    .artifact-list {
       list-style: none;
       display: grid;
       gap: 1rem;
     }
 
-    .report-card {
+    .artifact-card {
       background: #fff;
       border: 2px solid var(--black);
       border-radius: 6px;
@@ -72,25 +72,25 @@
       transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
 
-    .report-card:hover {
+    .artifact-card:hover {
       transform: translateY(-2px);
       box-shadow: 4px 4px 0 var(--blue);
     }
 
-    .report-card a {
+    .artifact-card a {
       color: var(--black);
       text-decoration: none;
       display: block;
     }
 
-    .report-title {
+    .artifact-title {
       font-weight: 800;
       font-size: 1.1rem;
       color: var(--blue);
       margin-bottom: 0.4rem;
     }
 
-    .report-meta {
+    .artifact-meta {
       font-size: 0.75rem;
       color: var(--teal);
       text-transform: uppercase;
@@ -98,7 +98,7 @@
       margin-bottom: 0.6rem;
     }
 
-    .report-desc {
+    .artifact-desc {
       font-size: 0.9rem;
       font-weight: 400;
       line-height: 1.45;
@@ -116,16 +116,16 @@
       <a href="../">← home</a>
     </nav>
 
-    <h1>Reports</h1>
-    <p class="lede">Standalone analyses and dashboards I've built. Mostly data-discovery work — things worth keeping around in a place I can link to.</p>
+    <h1>Artifacts</h1>
+    <p class="lede">Standalone engineering walkthroughs and write-ups. Things I've built or investigated that are worth keeping in a place I can link to.</p>
 
-    <ul class="report-list">
-      <li class="report-card">
-        <a href="./cache-ttl-analysis.html">
-          <div class="report-title">Cache TTL Analysis: 5min → 1hr Counterfactual</div>
-          <div class="report-meta">May 2026</div>
-          <p class="report-desc">
-            What would happen if we bumped prompt cache TTL from 5 minutes to 1 hour? A per-intent-group breakdown of the winners, the losers, and where the cost actually moves.
+    <ul class="artifact-list">
+      <li class="artifact-card">
+        <a href="./svg-rasterization-layers.html">
+          <div class="artifact-title">How three rasterization layers conspired against an SVG logo</div>
+          <div class="artifact-meta">May 2026 · Engineering walkthrough · 15 min read</div>
+          <p class="artifact-desc">
+            A logo rendered crisp in Chrome and Firefox but subtly blurry in Safari for weeks. Tracing the bug went through three distinct layers of the browser's SVG pipeline. Interactive walkthrough with quizzes, code translations, and the patterns worth stealing.
           </p>
         </a>
       </li>
