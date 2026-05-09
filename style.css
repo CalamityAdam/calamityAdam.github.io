@@ -1,21 +1,23 @@
-/* ---- Animatable custom properties (used for the slow conic accent) ---- */
-@property --hue {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
-}
-
 :root {
-  --cream:     #f6efe1;
-  --cream-2:   #ece1cb;
-  --ink:       #2a2620;
-  --ink-soft:  #5b5247;
-  --peach:     #f1b89e;
-  --sage:      #c2cdac;
-  --rose:      #d8a39c;
+  /* Surfaces — paperwhite through warm, no yellow cream */
+  --paper:        #fbf7f2;
+  --paper-2:      #f3ebe1;
+  --paper-edge:   #e8ddcd;
 
-  --line:      color-mix(in srgb, var(--ink) 18%, transparent);
-  --line-bold: color-mix(in srgb, var(--ink) 32%, transparent);
+  /* Peach — soft default + deeper hover/focus */
+  --peach:        #f4cdb9;
+  --peach-deep:   #ec9f7e;
+
+  /* Ink */
+  --ink:          #2b2722;
+  --ink-soft:     #6b6055;
+
+  --line:      color-mix(in srgb, var(--ink) 14%, transparent);
+  --line-bold: color-mix(in srgb, var(--ink) 26%, transparent);
+
+  --dur-fast: 150ms;
+  --dur-slow: 400ms;
+  --ease:     cubic-bezier(0.2, 0.6, 0.2, 1);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -25,286 +27,217 @@ html { color-scheme: light; }
 
 body {
   font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
-  font-size: clamp(15px, 0.5vw + 13.5px, 17.5px);
-  line-height: 1.5;
+  font-size: clamp(16px, 0.4vw + 14.5px, 17.5px);
+  line-height: 1.55;
   color: var(--ink);
-  background: var(--cream);
+  background: var(--paper);
   min-height: 100svh;
-  position: relative;
-  overflow-x: hidden;
 }
 
-/* Soft warm wash so the page doesn't look flat — two large radial gradients
-   in derived tints. Sits below the grain overlay. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background:
-    radial-gradient(60vmax 50vmax at 12% 18%, color-mix(in srgb, var(--peach) 22%, transparent), transparent 60%),
-    radial-gradient(55vmax 45vmax at 88% 90%, color-mix(in srgb, var(--sage) 24%, transparent), transparent 60%);
-}
+a { color: inherit; }
 
-a { color: var(--ink); }
-
-/* ---- Paper grain ---- */
+/* Paper grain — fixed full-viewport overlay, warm-tinted noise */
 .grain {
   position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
-  mix-blend-mode: multiply;
-  opacity: 0.55;
+  mix-blend-mode: overlay;
+  opacity: 0.18;
   z-index: 50;
 }
 
-/* ---- Layout ---- */
+/* Page shell */
 .page {
   --pad: clamp(1.25rem, 4vw, 2.75rem);
-  max-width: 1100px;
+  max-width: 1080px;
   margin: 0 auto;
   padding: var(--pad);
-  min-height: 100svh;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  grid-template-rows: auto 1fr auto;
-  grid-template-areas:
-    "brand    portrait"
-    "intro    portrait"
-    "foot     foot";
-  column-gap: clamp(1.5rem, 4vw, 3.5rem);
-  row-gap: clamp(1.5rem, 3vw, 2.5rem);
-  align-items: center;
+  gap: clamp(2.5rem, 6vw, 4.5rem);
 }
 
-@media (max-width: 760px) {
-  .page {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto;
-    grid-template-areas:
-      "brand"
-      "portrait"
-      "intro"
-      "foot";
-    align-items: start;
-    row-gap: 1.75rem;
+/* ---- Hero (mobile-first: stacked, portrait above) ---- */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: 2.25rem;
+  align-items: start;
+}
+.portrait { order: -1; }
+
+@media (min-width: 720px) {
+  .hero {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    column-gap: clamp(2rem, 5vw, 4rem);
+    row-gap: 0;
+    align-items: center;
+    min-height: clamp(420px, 60vh, 560px);
   }
+  .portrait { order: 0; }
 }
 
-/* ---- Brand mark (top-left) ---- */
-.brand {
-  grid-area: brand;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: 0.82rem;
-  letter-spacing: 0.06em;
-  color: var(--ink-soft);
-  align-self: start;
-}
-.brand__dot {
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 50%;
-  background: var(--peach);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--peach) 28%, transparent);
-  animation: brand-pulse 3.4s ease-in-out infinite;
-}
-@keyframes brand-pulse {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.18); }
-}
+.intro { max-width: 36ch; }
 
-/* ---- Intro copy ---- */
-.intro {
-  grid-area: intro;
-  max-width: 36ch;
-  align-self: center;
-}
-.intro__hello {
+.hello {
   font-style: italic;
-  font-weight: 300;
-  font-size: 1.1rem;
+  font-weight: 500;
+  font-size: 1.05rem;
   color: var(--ink-soft);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.4rem;
 }
-.intro__name {
-  font-weight: 300;
-  font-size: clamp(2.6rem, 5.5vw + 1rem, 4.6rem);
+
+.name {
+  font-weight: 600;
+  font-size: clamp(2.4rem, 5vw + 0.9rem, 4.4rem);
   line-height: 1.04;
-  letter-spacing: -0.022em;
-  margin-bottom: 1.2rem;
+  letter-spacing: -0.012em;
+  margin-bottom: 1.1rem;
   text-wrap: balance;
 }
-/* Marker-style highlight under the name. Pure CSS — gradient stops in
-   percentages give it a faintly off-baseline look. */
-.intro__hl {
-  font-weight: 900;
+.name strong {
+  font-weight: 800;
   background-image: linear-gradient(
-    180deg,
-    transparent 72%,
-    color-mix(in srgb, var(--peach) 78%, transparent) 72%,
-    color-mix(in srgb, var(--peach) 78%, transparent) 92%,
+    transparent 68%,
+    color-mix(in srgb, var(--peach) 65%, transparent) 68%,
+    color-mix(in srgb, var(--peach) 65%, transparent) 92%,
     transparent 92%
   );
   background-repeat: no-repeat;
   background-size: 100% 100%;
-  padding: 0 0.08em;
+  padding: 0 0.06em;
 }
-.intro__lede {
+
+.lede {
   font-size: 1.02rem;
-  color: var(--ink-soft);
   text-wrap: pretty;
   max-width: 32ch;
 }
-.intro__lede a {
-  color: var(--ink);
+.lede a,
+.about a {
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--peach) 70%, transparent);
+  text-decoration-color: color-mix(in srgb, var(--peach-deep) 60%, transparent);
   text-decoration-thickness: 2px;
   text-underline-offset: 3px;
-  transition: text-decoration-color 0.2s ease;
+  transition: text-decoration-color var(--dur-fast) var(--ease);
 }
-.intro__lede a:hover { text-decoration-color: var(--peach); }
+.lede a:hover,
+.about a:hover { text-decoration-color: var(--peach-deep); }
 
 /* ---- Nav chips ---- */
 .links {
-  margin-top: 1.75rem;
+  margin-top: 1.5rem;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 .chip {
-  --chip-bg: color-mix(in srgb, var(--cream-2) 75%, transparent);
   font-family: inherit;
-  font-size: 0.92rem;
-  padding: 0.55rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.7rem 1.05rem;
+  line-height: 1.2;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: var(--chip-bg);
+  background: var(--paper-2);
   color: var(--ink);
   text-decoration: none;
   transition:
-    transform 0.18s ease,
-    background-color 0.2s ease,
-    border-color 0.2s ease;
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
 }
 .chip:hover {
-  --chip-bg: color-mix(in srgb, var(--peach) 32%, var(--cream));
-  border-color: var(--line-bold);
-  transform: translateY(-2px) rotate(-0.6deg);
+  background: color-mix(in srgb, var(--peach-deep) 22%, var(--paper));
+  border-color: var(--peach-deep);
 }
 .chip:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--ink) 55%, transparent);
   outline-offset: 3px;
 }
 
-/* ---- Portrait ----
-   The frame is the photo. ::before is the offset peach card behind it.
-   ::after is a thin conic gradient ring drawn with mask-composite, slowly
-   rotated via the registered --hue property. */
-.portrait {
-  grid-area: portrait;
-  justify-self: center;
-  width: min(420px, 78vw);
-  aspect-ratio: 1;
-  position: relative;
-  isolation: isolate;
+@media (min-width: 720px) {
+  .chip {
+    font-size: 0.92rem;
+    padding: 0.5rem 0.95rem;
+  }
 }
 
+/* ---- Portrait ----
+   The img is the photo. ::before is the offset peach card behind it. */
+.portrait {
+  position: relative;
+  width: min(280px, 70vw);
+  aspect-ratio: 1;
+  margin-inline: auto;
+  isolation: isolate;
+}
 .portrait::before {
   content: "";
   position: absolute;
-  inset: -14px -14px 14px 14px;
-  border-radius: 22px;
+  inset: -8px -8px 8px 8px;
+  border-radius: 18px;
   background: var(--peach);
   transform: rotate(-2.5deg);
-  transition: transform 0.55s ease, background-color 0.55s ease;
+  transition: transform var(--dur-slow) var(--ease);
   z-index: 0;
 }
-
-.portrait::after {
-  content: "";
-  position: absolute;
-  inset: -3px;
-  border-radius: 24px;
-  padding: 2px;
-  background: conic-gradient(
-    from var(--hue),
-    var(--peach),
-    var(--sage),
-    var(--rose),
-    var(--peach)
-  );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  opacity: 0.55;
-  animation: portrait-spin 32s linear infinite;
-  z-index: 2;
-  pointer-events: none;
-}
-@keyframes portrait-spin {
-  to { --hue: 360deg; }
-}
-
-.portrait__frame {
+.portrait img {
   position: relative;
   z-index: 1;
   width: 100%;
   height: 100%;
-  border-radius: 20px;
-  overflow: hidden;
-  background: var(--cream-2);
-  box-shadow:
-    0 1px 2px rgba(42, 38, 32, 0.06),
-    0 14px 32px -16px rgba(42, 38, 32, 0.28);
-}
-.portrait__frame img {
-  width: 100%;
-  height: 100%;
   object-fit: cover;
-  filter: saturate(0.92) contrast(0.97);
-  transition: filter 0.6s ease, transform 0.7s ease;
+  border-radius: 18px;
+  background: var(--paper-2);
+  box-shadow:
+    0 1px 2px rgba(43, 39, 34, 0.06),
+    0 14px 30px -16px rgba(43, 39, 34, 0.24);
+  filter: saturate(0.96) contrast(0.98);
+  transition:
+    filter var(--dur-slow) var(--ease),
+    transform var(--dur-slow) var(--ease);
 }
-
-/* Hover: the offset card straightens, photo warms up slightly. */
-.portrait:hover .portrait__frame img {
+.portrait:hover img {
   filter: saturate(1.05) contrast(1);
-  transform: scale(1.015);
+  transform: scale(1.012);
 }
-.portrait:hover::before {
-  transform: rotate(-0.4deg);
-  background-color: color-mix(in srgb, var(--peach) 88%, var(--rose));
+.portrait:hover::before { transform: rotate(-0.6deg); }
+
+@media (min-width: 720px) {
+  .portrait { width: min(380px, 38vw); }
+  .portrait::before { inset: -12px -12px 12px 12px; }
 }
 
-/* :has() — when any chip is being hovered, give the offset card a tiny
-   responsive nudge. Subtle parent-selector demo. */
-.page:has(.chip:hover) .portrait::before {
-  transform: rotate(-3.5deg) translate(-2px, 2px);
+/* ---- About ---- */
+.about {
+  max-width: 50ch;
+  margin: 0 auto;
+  display: grid;
+  gap: 0.85rem;
 }
+.about__h {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 0.25rem;
+}
+.about p { font-size: 1rem; }
 
 /* ---- Footer ---- */
 .foot {
-  grid-area: foot;
-  font-size: 0.78rem;
-  letter-spacing: 0.04em;
+  text-align: center;
+  font-size: 0.82rem;
   color: var(--ink-soft);
-  align-self: end;
+  padding: 1.5rem clamp(1rem, 4vw, 2.75rem) 2rem;
 }
 .foot a {
-  color: inherit;
   text-decoration: underline;
   text-decoration-color: var(--line);
   text-underline-offset: 3px;
-  transition: text-decoration-color 0.2s ease;
+  transition: text-decoration-color var(--dur-fast) var(--ease);
 }
 .foot a:hover { text-decoration-color: var(--line-bold); }
 
@@ -312,7 +245,6 @@ a { color: var(--ink); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
 }
