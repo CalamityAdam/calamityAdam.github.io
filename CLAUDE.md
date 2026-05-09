@@ -48,8 +48,8 @@ To add a report or artifact:
 3. For artifacts: also add OG/Twitter meta + JSON-LD with absolute `https://adumb.dev/...` URLs, and an OG image (1200×630, can be SVG)
 4. Commit and push
 
-### Nav grid is hardcoded
-`style.css` uses `grid-template-columns: repeat(N, 1fr)` for the homepage nav — `N` is the literal link count. If you add or remove a nav item, update the column count too.
+### Homepage nav is flex chips
+`style.css` lays out the homepage nav as a flex-wrap row of pill-shaped `.chip` links — adding or removing a chip needs no layout changes, they wrap on their own.
 
 ## Git
 
