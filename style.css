@@ -1,10 +1,10 @@
 :root {
-  /* Surfaces — paperwhite through warm, no yellow cream */
+  /* Surfaces: paperwhite through warm, no yellow cream */
   --paper:        #fbf7f2;
   --paper-2:      #f3ebe1;
   --paper-edge:   #e8ddcd;
 
-  /* Peach — soft default + deeper hover/focus */
+  /* Peach: soft default + deeper hover/focus */
   --peach:        #f4cdb9;
   --peach-deep:   #ec9f7e;
 
@@ -36,7 +36,7 @@ body {
 
 a { color: inherit; }
 
-/* Paper grain — fixed full-viewport overlay, warm-tinted noise */
+/* Paper grain: fixed full-viewport overlay, warm-tinted noise */
 .grain {
   position: fixed;
   inset: 0;
