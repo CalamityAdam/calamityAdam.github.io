@@ -48,13 +48,15 @@ a { color: inherit; }
   z-index: 50;
 }
 
-/* Page shell */
+/* Page shell — fills the viewport so the footer sits just below the fold */
 .page {
   --pad: clamp(1.25rem, 4vw, 2.75rem);
   max-width: 1080px;
   margin: 0 auto;
   padding: var(--pad);
+  min-height: 100svh;
   display: grid;
+  align-content: center;
   gap: clamp(2.5rem, 6vw, 4.5rem);
 }
 
