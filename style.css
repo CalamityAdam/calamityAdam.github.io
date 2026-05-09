@@ -1,12 +1,19 @@
 :root {
-  --cream:     #f6efe1;
-  --cream-2:   #ede2cd;
-  --ink:       #2a2620;
-  --ink-soft:  #5b5247;
-  --peach:     #f1b89e;
+  /* Surfaces — paperwhite through warm, no yellow cream */
+  --paper:        #fbf7f2;
+  --paper-2:      #f3ebe1;
+  --paper-edge:   #e8ddcd;
 
-  --line:      color-mix(in srgb, var(--ink) 18%, transparent);
-  --line-bold: color-mix(in srgb, var(--ink) 30%, transparent);
+  /* Peach — soft default + deeper hover/focus */
+  --peach:        #f4cdb9;
+  --peach-deep:   #ec9f7e;
+
+  /* Ink */
+  --ink:          #2b2722;
+  --ink-soft:     #6b6055;
+
+  --line:      color-mix(in srgb, var(--ink) 14%, transparent);
+  --line-bold: color-mix(in srgb, var(--ink) 26%, transparent);
 
   --dur-fast: 150ms;
   --dur-slow: 400ms;
@@ -20,24 +27,24 @@ html { color-scheme: light; }
 
 body {
   font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
-  font-size: clamp(15.5px, 0.5vw + 14px, 17.5px);
+  font-size: clamp(16px, 0.4vw + 14.5px, 17.5px);
   line-height: 1.55;
   color: var(--ink);
-  background: var(--cream);
+  background: var(--paper);
   min-height: 100svh;
 }
 
 a { color: inherit; }
 
-/* Paper grain — fixed full-viewport overlay */
+/* Paper grain — fixed full-viewport overlay, warm-tinted noise */
 .grain {
   position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
-  mix-blend-mode: multiply;
-  opacity: 0.22;
+  mix-blend-mode: overlay;
+  opacity: 0.18;
   z-index: 50;
 }
 
@@ -51,46 +58,51 @@ a { color: inherit; }
   gap: clamp(2.5rem, 6vw, 4.5rem);
 }
 
-/* ---- Hero ---- */
+/* ---- Hero (mobile-first: stacked, portrait above) ---- */
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  column-gap: clamp(2rem, 5vw, 4rem);
-  align-items: center;
-  min-height: clamp(420px, 70vh, 600px);
+  grid-template-columns: 1fr;
+  row-gap: 2.25rem;
+  align-items: start;
 }
-@media (max-width: 960px) {
+.portrait { order: -1; }
+
+@media (min-width: 720px) {
   .hero {
-    grid-template-columns: 1fr;
-    row-gap: 2.25rem;
-    min-height: 0;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    column-gap: clamp(2rem, 5vw, 4rem);
+    row-gap: 0;
+    align-items: center;
+    min-height: clamp(420px, 60vh, 560px);
   }
-  .portrait { order: -1; }
+  .portrait { order: 0; }
 }
 
 .intro { max-width: 36ch; }
 
 .hello {
   font-style: italic;
-  font-weight: 300;
+  font-weight: 500;
   font-size: 1.05rem;
   color: var(--ink-soft);
   margin-bottom: 0.4rem;
 }
 
 .name {
-  font-weight: 400;
+  font-weight: 600;
   font-size: clamp(2.4rem, 5vw + 0.9rem, 4.4rem);
   line-height: 1.04;
+  letter-spacing: -0.012em;
   margin-bottom: 1.1rem;
   text-wrap: balance;
 }
 .name strong {
-  font-weight: 900;
-  letter-spacing: -0.01em;
+  font-weight: 800;
   background-image: linear-gradient(
-    transparent 72%,
-    color-mix(in srgb, var(--peach) 78%, transparent) 72%
+    transparent 68%,
+    color-mix(in srgb, var(--peach) 65%, transparent) 68%,
+    color-mix(in srgb, var(--peach) 65%, transparent) 92%,
+    transparent 92%
   );
   background-repeat: no-repeat;
   background-size: 100% 100%;
@@ -105,13 +117,13 @@ a { color: inherit; }
 .lede a,
 .about a {
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--peach) 70%, transparent);
+  text-decoration-color: color-mix(in srgb, var(--peach-deep) 60%, transparent);
   text-decoration-thickness: 2px;
   text-underline-offset: 3px;
   transition: text-decoration-color var(--dur-fast) var(--ease);
 }
 .lede a:hover,
-.about a:hover { text-decoration-color: var(--peach); }
+.about a:hover { text-decoration-color: var(--peach-deep); }
 
 /* ---- Nav chips ---- */
 .links {
@@ -122,42 +134,49 @@ a { color: inherit; }
 }
 .chip {
   font-family: inherit;
-  font-size: 0.92rem;
-  padding: 0.5rem 0.95rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.7rem 1.05rem;
+  line-height: 1.2;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: var(--cream-2);
+  background: var(--paper-2);
   color: var(--ink);
   text-decoration: none;
   transition:
-    transform var(--dur-fast) var(--ease),
     background-color var(--dur-fast) var(--ease),
     border-color var(--dur-fast) var(--ease);
 }
 .chip:hover {
-  background: color-mix(in srgb, var(--peach) 30%, var(--cream));
-  border-color: var(--line-bold);
-  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--peach-deep) 22%, var(--paper));
+  border-color: var(--peach-deep);
 }
 .chip:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--ink) 55%, transparent);
   outline-offset: 3px;
 }
 
+@media (min-width: 720px) {
+  .chip {
+    font-size: 0.92rem;
+    padding: 0.5rem 0.95rem;
+  }
+}
+
 /* ---- Portrait ----
    The img is the photo. ::before is the offset peach card behind it. */
 .portrait {
   position: relative;
-  width: min(380px, 78vw);
+  width: min(280px, 70vw);
   aspect-ratio: 1;
-  justify-self: center;
+  margin-inline: auto;
   isolation: isolate;
 }
 .portrait::before {
   content: "";
   position: absolute;
-  inset: -12px -12px 12px 12px;
-  border-radius: 20px;
+  inset: -8px -8px 8px 8px;
+  border-radius: 18px;
   background: var(--peach);
   transform: rotate(-2.5deg);
   transition: transform var(--dur-slow) var(--ease);
@@ -170,10 +189,10 @@ a { color: inherit; }
   height: 100%;
   object-fit: cover;
   border-radius: 18px;
-  background: var(--cream-2);
+  background: var(--paper-2);
   box-shadow:
-    0 1px 2px rgba(42, 38, 32, 0.06),
-    0 14px 30px -16px rgba(42, 38, 32, 0.28);
+    0 1px 2px rgba(43, 39, 34, 0.06),
+    0 14px 30px -16px rgba(43, 39, 34, 0.24);
   filter: saturate(0.96) contrast(0.98);
   transition:
     filter var(--dur-slow) var(--ease),
@@ -185,13 +204,9 @@ a { color: inherit; }
 }
 .portrait:hover::before { transform: rotate(-0.6deg); }
 
-/* ---- Rule between hero and about ---- */
-.rule {
-  border: 0;
-  height: 1px;
-  width: min(40ch, 60%);
-  margin: 0 auto;
-  background: var(--line);
+@media (min-width: 720px) {
+  .portrait { width: min(380px, 38vw); }
+  .portrait::before { inset: -12px -12px 12px 12px; }
 }
 
 /* ---- About ---- */
@@ -200,6 +215,14 @@ a { color: inherit; }
   margin: 0 auto;
   display: grid;
   gap: 0.85rem;
+}
+.about__h {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 0.25rem;
 }
 .about p { font-size: 1rem; }
 

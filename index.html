@@ -7,9 +7,16 @@
   <title>Adam Sisk</title>
   <meta name="description" content="Adam Sisk — software engineer at Ramsey Solutions.">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+
+  <link rel="preload" as="image"
+        imagesrcset="./assets/adam-headshot-512.webp 512w, ./assets/adam-headshot.webp 1024w"
+        imagesizes="(max-width: 720px) 70vw, 380px"
+        type="image/webp"
+        fetchpriority="high">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
 </head>
 
@@ -17,9 +24,9 @@
   <svg class="grain" aria-hidden="true" focusable="false">
     <filter id="grain">
       <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
-      <feColorMatrix values="0 0 0 0 0
-                             0 0 0 0 0
-                             0 0 0 0 0
+      <feColorMatrix values="0 0 0 0 0.18
+                             0 0 0 0 0.13
+                             0 0 0 0 0.10
                              0 0 0 0.10 0" />
     </filter>
     <rect width="100%" height="100%" filter="url(#grain)" />
@@ -47,11 +54,11 @@
           <source
             type="image/webp"
             srcset="./assets/adam-headshot-512.webp 512w, ./assets/adam-headshot.webp 1024w"
-            sizes="(max-width: 960px) 80vw, 380px">
+            sizes="(max-width: 720px) 70vw, 380px">
           <img
             src="./assets/adam-headshot.jpg"
             srcset="./assets/adam-headshot-512.jpg 512w, ./assets/adam-headshot.jpg 1024w"
-            sizes="(max-width: 960px) 80vw, 380px"
+            sizes="(max-width: 720px) 70vw, 380px"
             alt="Adam Sisk"
             width="1024" height="1024"
             loading="eager" decoding="async" fetchpriority="high">
@@ -59,9 +66,8 @@
       </div>
     </section>
 
-    <hr class="rule">
-
-    <section class="about">
+    <section class="about" aria-labelledby="about-h">
+      <h2 id="about-h" class="about__h">about</h2>
       <p>
         I'm on the in-house engineering team at
         <a href="https://www.ramseyinhouse.com/">Ramsey</a>.
@@ -69,7 +75,8 @@
       </p>
       <p>
         Want to talk shop or just say hi?
-        <a href="mailto:adamsisk91@gmail.com?subject=Hi%20Adam">Email is the fastest way.</a>
+        <a href="mailto:adamsisk91@gmail.com?subject=Hi%20Adam">Email is the fastest way</a>,
+        or grab my <a href="./assets/ADAMSISKRESUME.pdf">resume</a>.
       </p>
     </section>
   </main>
