@@ -78,7 +78,7 @@ a { color: inherit; }
   .portrait { order: 0; }
 }
 
-.intro { max-width: 28ch; }
+.intro { max-width: 32em; }
 
 .name {
   font-weight: 600;
@@ -90,6 +90,7 @@ a { color: inherit; }
 }
 .name strong {
   font-weight: 800;
+  white-space: nowrap;
   background-image: linear-gradient(
     transparent 68%,
     color-mix(in srgb, var(--peach) 65%, transparent) 68%,
