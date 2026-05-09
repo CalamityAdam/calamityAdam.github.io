@@ -4,13 +4,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Adam Sisk</title>
   <meta name="description" content="Adam Sisk — software engineer at Ramsey Solutions.">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
 </head>
 
@@ -21,44 +20,65 @@
       <feColorMatrix values="0 0 0 0 0
                              0 0 0 0 0
                              0 0 0 0 0
-                             0 0 0 0.09 0" />
+                             0 0 0 0.10 0" />
     </filter>
     <rect width="100%" height="100%" filter="url(#grain)" />
   </svg>
 
   <main class="page">
-    <header class="brand">
-      <span class="brand__dot" aria-hidden="true"></span>
-      <span class="brand__name">adumb.dev</span>
-    </header>
+    <section class="hero">
+      <div class="intro">
+        <p class="hello">hi —</p>
+        <h1 class="name">I'm <strong>Adam Sisk</strong>.</h1>
+        <p class="lede">
+          Software engineer at
+          <a href="https://www.ramseyinhouse.com/">Ramsey Solutions</a>
+          — mostly TypeScript, sometimes write-ups.
+        </p>
 
-    <section class="intro">
-      <p class="intro__hello">hi —</p>
-      <h1 class="intro__name">I'm <span class="intro__hl">Adam&nbsp;Sisk</span>.</h1>
-      <p class="intro__lede">
-        A software engineer at
-        <a href="https://www.ramseyinhouse.com/">Ramsey Solutions</a>,
-        mostly writing TypeScript and the occasional write-up.
-      </p>
+        <nav class="links" aria-label="Primary">
+          <a class="chip" href="mailto:adamsisk91@gmail.com?subject=Hi%20Adam">say hi</a>
+          <a class="chip" href="./assets/ADAMSISKRESUME.pdf">resume</a>
+          <a class="chip" href="https://www.linkedin.com/in/adamsisk/">linkedin</a>
+          <a class="chip" href="https://github.com/CalamityAdam">github</a>
+        </nav>
+      </div>
 
-      <nav class="links" aria-label="Primary">
-        <a class="chip" href="mailto:adamsisk91@gmail.com?subject=Hi%20Adam">say hi</a>
-        <a class="chip" href="./assets/ADAMSISKRESUME.pdf">resume</a>
-        <a class="chip" href="https://www.linkedin.com/in/adamsisk/">linkedin</a>
-        <a class="chip" href="https://github.com/CalamityAdam">github</a>
-      </nav>
+      <div class="portrait">
+        <picture>
+          <source
+            type="image/webp"
+            srcset="./assets/adam-headshot-512.webp 512w, ./assets/adam-headshot.webp 1024w"
+            sizes="(max-width: 960px) 80vw, 380px">
+          <img
+            src="./assets/adam-headshot.jpg"
+            srcset="./assets/adam-headshot-512.jpg 512w, ./assets/adam-headshot.jpg 1024w"
+            sizes="(max-width: 960px) 80vw, 380px"
+            alt="Adam Sisk"
+            width="1024" height="1024"
+            loading="eager" decoding="async" fetchpriority="high">
+        </picture>
+      </div>
     </section>
 
-    <figure class="portrait">
-      <div class="portrait__frame">
-        <img src="./assets/adam-headshot.jpg" alt="Adam Sisk" width="600" height="600" loading="eager" decoding="async">
-      </div>
-    </figure>
+    <hr class="rule">
 
-    <footer class="foot">
-      <span class="foot__line">made by hand · <a href="https://github.com/CalamityAdam/calamityAdam.github.io">view source</a></span>
-    </footer>
+    <section class="about">
+      <p>
+        I'm on the in-house engineering team at
+        <a href="https://www.ramseyinhouse.com/">Ramsey</a>.
+        I keep notes when something is worth keeping notes on.
+      </p>
+      <p>
+        Want to talk shop or just say hi?
+        <a href="mailto:adamsisk91@gmail.com?subject=Hi%20Adam">Email is the fastest way.</a>
+      </p>
+    </section>
   </main>
+
+  <footer class="foot">
+    <a href="https://github.com/CalamityAdam/calamityAdam.github.io">view source</a>
+  </footer>
 
   <script src="./index.js"></script>
 </body>
