@@ -3,27 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Artifacts — Adam Sisk</title>
+  <title>Artifacts, Adam Sisk</title>
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link href="https://fonts.googleapis.com/css?family=Montserrat:200,400,800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --black: #35393c;
-      --teal: #42858c;
-      --pastel: #b5d5d0;
-      --red: #db3a34;
-      --green: #397367;
-      --blue: #1D70A2;
+      --paper:        #fbf7f2;
+      --paper-2:      #f3ebe1;
+      --peach:        #f4cdb9;
+      --peach-deep:   #ec9f7e;
+      --ink:          #2b2722;
+      --ink-soft:     #6b6055;
     }
 
     *, *::before, *::after { box-sizing: border-box; }
     * { margin: 0; padding: 0; }
 
-    html { font-size: 18px; color: var(--black); }
+    html { font-size: 18px; color: var(--ink); }
     body {
       font-family: 'Montserrat', sans-serif;
-      background-color: var(--pastel);
-      color: var(--black);
+      background-color: var(--paper);
+      color: var(--ink);
       min-height: 100vh;
       padding: 2rem 1rem;
     }
@@ -40,7 +40,7 @@
       letter-spacing: 0.05em;
     }
     .crumbs a {
-      color: var(--blue);
+      color: var(--peach-deep);
       text-decoration: underline;
     }
 
@@ -66,7 +66,7 @@
 
     .artifact-card {
       background: #fff;
-      border: 2px solid var(--black);
+      border: 2px solid var(--ink);
       border-radius: 6px;
       padding: 1.25rem 1.5rem;
       transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -74,11 +74,11 @@
 
     .artifact-card:hover {
       transform: translateY(-2px);
-      box-shadow: 4px 4px 0 var(--blue);
+      box-shadow: 4px 4px 0 var(--peach-deep);
     }
 
     .artifact-card a {
-      color: var(--black);
+      color: var(--ink);
       text-decoration: none;
       display: block;
     }
@@ -86,13 +86,13 @@
     .artifact-title {
       font-weight: 800;
       font-size: 1.1rem;
-      color: var(--blue);
+      color: var(--peach-deep);
       margin-bottom: 0.4rem;
     }
 
     .artifact-meta {
       font-size: 0.75rem;
-      color: var(--teal);
+      color: var(--ink-soft);
       text-transform: uppercase;
       letter-spacing: 0.05em;
       margin-bottom: 0.6rem;
@@ -117,7 +117,7 @@
     </nav>
 
     <h1>Artifacts</h1>
-    <p class="lede">Standalone engineering walkthroughs and write-ups. Things I've built or investigated that are worth keeping in a place I can link to.</p>
+    <p class="lede">Standalone engineering walkthroughs and longform notes. Things I've built or investigated that are worth keeping in a place I can link to.</p>
 
     <ul class="artifact-list">
       <li class="artifact-card">
