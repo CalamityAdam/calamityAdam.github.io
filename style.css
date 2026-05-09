@@ -78,26 +78,19 @@ a { color: inherit; }
   .portrait { order: 0; }
 }
 
-.intro { max-width: 36ch; }
-
-.hello {
-  font-style: italic;
-  font-weight: 500;
-  font-size: 1.05rem;
-  color: var(--ink-soft);
-  margin-bottom: 0.4rem;
-}
+.intro { max-width: 32em; }
 
 .name {
   font-weight: 600;
-  font-size: clamp(2.4rem, 5vw + 0.9rem, 4.4rem);
-  line-height: 1.04;
+  font-size: clamp(1.85rem, 2.2vw + 1.05rem, 2.85rem);
+  line-height: 1.18;
   letter-spacing: -0.012em;
-  margin-bottom: 1.1rem;
+  margin-bottom: 1.4rem;
   text-wrap: balance;
 }
 .name strong {
   font-weight: 800;
+  white-space: nowrap;
   background-image: linear-gradient(
     transparent 68%,
     color-mix(in srgb, var(--peach) 65%, transparent) 68%,
@@ -108,22 +101,6 @@ a { color: inherit; }
   background-size: 100% 100%;
   padding: 0 0.06em;
 }
-
-.lede {
-  font-size: 1.02rem;
-  text-wrap: pretty;
-  max-width: 32ch;
-}
-.lede a,
-.about a {
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--peach-deep) 60%, transparent);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 3px;
-  transition: text-decoration-color var(--dur-fast) var(--ease);
-}
-.lede a:hover,
-.about a:hover { text-decoration-color: var(--peach-deep); }
 
 /* ---- Nav chips ---- */
 .links {
@@ -209,23 +186,6 @@ a { color: inherit; }
   .portrait { width: min(260px, 30vw); }
   .portrait::before { inset: -8px -8px 8px 8px; }
 }
-
-/* ---- About ---- */
-.about {
-  max-width: 50ch;
-  margin: 0 auto;
-  display: grid;
-  gap: 0.85rem;
-}
-.about__h {
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  margin-bottom: 0.25rem;
-}
-.about p { font-size: 1rem; }
 
 /* ---- Footer ---- */
 .foot {
