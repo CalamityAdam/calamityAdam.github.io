@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Acorn to Oak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef6e4; --panel:#eef6e4; --text:#2f3a1f; --muted:#5f6b4c;
+  --go:#3f8f2a; --go-text:#ffffff; --soft:#d9e8c6; --soft-text:#2f3a1f;
+  --dot:#c6d8ad; --dot-on:#3f8f2a; --pill:#ffffffd9; --pill-text:#2f3a1f; --focus:#1d5fbf;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#172012; --panel:#172012; --text:#eef4e4; --muted:#b4c2a0;
+    --go:#7cc85a; --go-text:#10200a; --soft:#2a3822; --soft-text:#eef4e4;
+    --dot:#38492e; --dot-on:#7cc85a; --pill:#172012d9; --pill-text:#eef4e4; --focus:#8fc1ff;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#172012; --panel:#172012; --text:#eef4e4; --muted:#b4c2a0;
+  --go:#7cc85a; --go-text:#10200a; --soft:#2a3822; --soft-text:#eef4e4;
+  --dot:#38492e; --dot-on:#7cc85a; --pill:#172012d9; --pill-text:#eef4e4; --focus:#8fc1ff;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;height:100%;display:flex;flex-direction:column;
+  background:var(--bg);color:var(--text);
+  font-family:"Baloo 2","Trebuchet MS","Verdana",system-ui,sans-serif;
+}
+#scene{flex:1;min-height:0;position:relative;overflow:hidden}
+#scene canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.title{
+  position:absolute;top:12px;left:12px;margin:0;
+  background:var(--pill);color:var(--pill-text);
+  font-size:clamp(18px,3.5vw,26px);font-weight:800;line-height:1.1;
+  padding:6px 14px;border-radius:999px;
+}
+.panel{background:var(--panel);padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.say{display:flex;align-items:center;gap:14px;max-width:760px;width:100%;min-height:72px}
+.emoji{font-size:clamp(44px,9vw,64px);line-height:1;flex:none}
+.words{font-size:clamp(22px,4.6vw,32px);font-weight:700;line-height:1.2;margin:0}
+.dots{display:flex;gap:10px}
+.dot{width:16px;height:16px;border-radius:50%;background:var(--dot);border:0;padding:0;cursor:pointer}
+.dot.on{background:var(--dot-on);transform:scale(1.25)}
+.btns{display:flex;gap:12px;width:100%;max-width:760px}
+button{font:inherit;cursor:pointer;border:0}
+button:focus-visible{outline:4px solid var(--focus);outline-offset:3px}
+.b{border-radius:22px;font-size:clamp(20px,4.5vw,28px);font-weight:800;padding:12px 18px;min-height:64px}
+.soft{background:var(--soft);color:var(--soft-text)}
+.go{background:var(--go);color:var(--go-text);flex:1}
+.b:disabled{opacity:.4;cursor:default}
+@media (prefers-reduced-motion:reduce){.dot.on{transform:none}}
+</style>
+</head>
+<body>
+<div id="scene" aria-label="3D picture of an acorn growing into an oak tree">
+  <h1 class="title">🌰 Acorn to Oak 🌳</h1>
+</div>
+<div class="panel">
+  <div class="say" aria-live="polite">
+    <span class="emoji" id="emoji">🌰</span>
+    <p class="words" id="words"></p>
+  </div>
+  <div class="dots" id="dots"></div>
+  <div class="btns">
+    <button class="b soft" id="back" aria-label="Back">◀</button>
+    <button class="b soft" id="sound" aria-pressed="true" aria-label="Read aloud">🔊</button>
+    <button class="b go" id="next">Next ▶</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const STAGES = [
+  {e:"🌰", t:"Plop! An acorn falls to the ground."},
+  {e:"🐿️", t:"A squirrel hides it in the dirt."},
+  {e:"💧", t:"Rain falls. A root grows down to drink the water."},
+  {e:"🌱", t:"A tiny sprout pops up to see the sun!"},
+  {e:"🍃", t:"It grows leaves. Now it’s a seedling."},
+  {e:"🌿", t:"It keeps growing into a young tree called a sapling."},
+  {e:"🌳", t:"Many years later, a big oak tree! It grows new acorns."}
+];
+
+// ---------- three.js setup ----------
+const wrap = document.getElementById("scene");
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+wrap.insertBefore(renderer.domElement, wrap.firstChild);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xbfe6ff);
+scene.fog = new THREE.Fog(0xbfe6ff, 20, 45);
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+function resize(){
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(wrap);
+resize();
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x6b4a2b, 0.8));
+const sunLight = new THREE.DirectionalLight(0xfff2d0, 0.75);
+sunLight.position.set(-5, 8, 6);
+scene.add(sunLight);
+
+const mat = (c, o) => new THREE.MeshLambertMaterial(Object.assign({color:c}, o || {}));
+const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
+const lerp = (a,b,t) => a + (b - a) * t;
+const smooth = t => t * t * (3 - 2 * t);
+
+// Ground: see-through soil so kids can watch underground
+const DEPTH = 30, FRONT = 0.5;
+const soil = new THREE.Mesh(new THREE.BoxGeometry(12, 3.5, DEPTH),
+  mat(0x7a4e2d, {transparent:true, opacity:0.55, depthWrite:false}));
+soil.position.set(0, -0.08 - 1.75, FRONT - DEPTH / 2);
+scene.add(soil);
+const grass = new THREE.Mesh(new THREE.BoxGeometry(12, 0.08, DEPTH), mat(0x6cbf45));
+grass.position.set(0, -0.04, FRONT - DEPTH / 2);
+scene.add(grass);
+
+// pebbles in the dirt
+const pebbleMat = mat(0x9a9488);
+[[-1.6,-0.6],[1.4,-1.1],[-0.9,-1.9],[2.2,-2.4],[-2.4,-2.8],[0.9,-2.9],[-1.9,-1.4]].forEach(([x,y],i)=>{
+  const m = new THREE.Mesh(new THREE.SphereGeometry(0.1 + (i % 3) * 0.04, 8, 6), pebbleMat);
+  m.position.set(x, y, 0.2);
+  m.scale.y = 0.7;
+  scene.add(m);
+});
+
+// grass tufts
+const tuftMat = mat(0x4fa32e);
+for (let i = 0; i < 60; i++){
+  const x = (Math.random() - 0.5) * 11, z = FRONT - 0.1 - Math.random() * 10;
+  if (Math.abs(x) < 0.7 && z > -0.7) continue;
+  const m = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.22, 4), tuftMat);
+  m.position.set(x, 0.1, z);
+  scene.add(m);
+}
+
+// sun + clouds
+const sun = new THREE.Mesh(new THREE.SphereGeometry(1.3, 24, 16), new THREE.MeshBasicMaterial({color:0xffd84a}));
+sun.position.set(-8, 9, -16);
+scene.add(sun);
+const clouds = [];
+const cloudMat = mat(0xffffff);
+for (let i = 0; i < 4; i++){
+  const c = new THREE.Group();
+  [[0,0,0.9],[0.9,-0.1,0.7],[-0.9,-0.1,0.7],[0.3,0.4,0.6]].forEach(([x,y,r])=>{
+    const s = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 10), cloudMat);
+    s.position.set(x, y, 0);
+    c.add(s);
+  });
+  c.position.set(-12 + i * 7, 6 + (i % 2), -12 - i);
+  scene.add(c);
+  clouds.push(c);
+}
+
+// acorn
+function makeAcorn(){
+  const g = new THREE.Group();
+  const nut = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12), mat(0xc08040));
+  nut.scale.set(1, 1.35, 1); nut.position.y = -0.03; g.add(nut);
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat(0x6b4423));
+  cap.position.y = 0.06; cap.scale.y = 0.7; g.add(cap);
+  const st = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.06, 6), mat(0x4a2f18));
+  st.position.y = 0.17; g.add(st);
+  return g;
+}
+const acorn = makeAcorn();
+acorn.scale.setScalar(1.5);
+scene.add(acorn);
+
+// roots
+const rootMat = mat(0xe8d3a8);
+const rootGeo = new THREE.CylinderGeometry(1, 0.15, 1, 8);
+rootGeo.translate(0, -0.5, 0);
+const ROOT_TOP = -0.95;
+const mainRoot = new THREE.Mesh(rootGeo, rootMat);
+mainRoot.position.set(0, ROOT_TOP, 0);
+scene.add(mainRoot);
+const sideRoots = [[-0.9,0.35],[0.9,0.55],[-0.8,0.8],[1.0,1.0]].map(([rz,d])=>{
+  const m = new THREE.Mesh(rootGeo, rootMat);
+  m.position.set(0, ROOT_TOP - d, 0);
+  m.rotation.z = rz;
+  scene.add(m);
+  return m;
+});
+
+// stem / trunk
+const stemGeo = new THREE.CylinderGeometry(0.7, 1, 1, 14);
+stemGeo.translate(0, 0.5, 0);
+const stemMat = mat(0x5aa832);
+const stem = new THREE.Mesh(stemGeo, stemMat);
+const STEM_BASE = -0.45;
+stem.position.set(0, STEM_BASE, 0);
+scene.add(stem);
+const GREEN = new THREE.Color(0x5aa832), BROWN = new THREE.Color(0x6b4a2b);
+
+// seedling leaves
+const leafMat = mat(0x58b033);
+const leafGeo = new THREE.SphereGeometry(1, 12, 8);
+const leaves = [];
+for (let i = 0; i < 6; i++){
+  const pivot = new THREE.Group();
+  const leaf = new THREE.Mesh(leafGeo, leafMat);
+  leaf.scale.set(0.17, 0.025, 0.08);
+  leaf.position.x = 0.16;
+  leaf.rotation.z = 0.35;
+  pivot.add(leaf);
+  pivot.rotation.y = i < 2 ? i * Math.PI : (i * Math.PI / 2) + 0.7;
+  scene.add(pivot);
+  leaves.push(pivot);
+}
+
+// big canopy
+const canopy = new THREE.Group();
+const greens = [0x3f8f2a, 0x4fa32e, 0x5cb338, 0x468f2c];
+[[0,0,0,1.3],[1.2,-0.2,0.3,1],[-1.2,-0.1,-0.2,1.05],[0.5,0.8,-0.5,1],[-0.6,0.7,0.6,0.95],
+ [0.3,-0.4,1,0.9],[-0.3,-0.3,-1,0.95],[1.5,0.4,-0.6,0.8],[-1.5,0.3,0.6,0.8],[0,1.2,0,0.9]]
+ .forEach(([x,y,z,r],i)=>{
+  const m = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), mat(greens[i % 4], {flatShading:true}));
+  m.position.set(x, y, z);
+  canopy.add(m);
+});
+const newAcorns = [];
+for (let i = 0; i < 10; i++){
+  const a = makeAcorn();
+  const ang = i / 10 * Math.PI * 2 + 0.3;
+  a.position.set(Math.cos(ang) * 2.15, -0.7 + (i % 3) * 0.45, Math.sin(ang) * 2.0);
+  canopy.add(a);
+  newAcorns.push(a);
+}
+scene.add(canopy);
+
+// rain
+const rainMat = new THREE.MeshBasicMaterial({color:0x3d8fe0, transparent:true, opacity:0});
+const drops = [];
+for (let i = 0; i < 50; i++){
+  const d = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 6), rainMat);
+  d.scale.y = 2.2;
+  d.userData = {x:(Math.random() - 0.5) * 5, z:-1 - Math.random() * 1.5, o:Math.random()};
+  scene.add(d);
+  drops.push(d);
+}
+
+// ---------- the story, driven by one number p (0 to 7) ----------
+function update(p, t){
+  const r = (a,b) => clamp((p - a) / (b - a), 0, 1);
+
+  // acorn falls, gets buried, then gets used up
+  const fall = r(0, 1);
+  const ay = lerp(5.5, 0.3, fall * fall);
+  acorn.position.y = lerp(ay, -0.7, smooth(r(1, 2)));
+  acorn.rotation.z = Math.sin(p * 25) * 0.4 * (1 - fall);
+  const used = 1 - r(4.5, 6);
+  acorn.scale.setScalar(1.5 * used);
+  acorn.visible = used > 0.01;
+
+  // roots
+  const len = 0.5 * r(2, 3) + 0.3 * r(3, 5) + 0.5 * r(5, 7);
+  const rr = 0.03 + 0.05 * r(5, 7);
+  mainRoot.visible = len > 0.01;
+  mainRoot.scale.set(rr, Math.max(len, 0.001), rr);
+  const side = r(4.5, 6.5);
+  sideRoots.forEach(m => {
+    m.visible = side > 0.01;
+    m.scale.set(rr * 0.6, 0.7 * side + 0.001, rr * 0.6);
+  });
+
+  // stem becomes trunk
+  const h = 0.8 * r(3, 4) + 0.5 * r(4, 5) + 2.2 * r(5, 6) + 1.9 * r(6, 7);
+  const rad = 0.025 + 0.03 * r(5, 6) + 0.27 * r(6, 7);
+  stem.visible = h > 0.01;
+  stem.scale.set(rad, Math.max(h, 0.001), rad);
+  stemMat.color.copy(GREEN).lerp(BROWN, r(5, 6.2));
+  const top = STEM_BASE + h;
+
+  // little leaves
+  const fade = 1 - r(5.4, 6);
+  leaves.forEach((lf, i) => {
+    const s = (i < 2 ? r(3.5, 4) : r(4.3, 5)) * fade;
+    lf.visible = s > 0.01;
+    lf.scale.setScalar(Math.max(s, 0.001) * 1.6);
+    lf.position.set(0, top - (i < 2 ? 0.02 : 0.15 + (i - 2) * 0.12), 0);
+  });
+
+  // canopy
+  const cs = 0.3 * r(5.2, 6) + 0.7 * r(6, 7);
+  canopy.visible = cs > 0.01;
+  canopy.scale.setScalar(Math.max(cs, 0.001));
+  canopy.position.y = top + 0.4 * cs;
+  canopy.rotation.z = Math.sin(t * 0.8) * 0.02;
+  const na = r(6.5, 7);
+  newAcorns.forEach(a => { a.visible = na > 0.01; a.scale.setScalar(Math.max(na, 0.001) * 1.4); });
+
+  // rain during the root stage
+  const rain = r(2.1, 2.5) * (1 - r(3.2, 3.6));
+  rainMat.opacity = rain * 0.85;
+  drops.forEach(d => {
+    d.visible = rain > 0.01;
+    const y = 3 - ((t * 0.9 + d.userData.o) % 1) * 3;
+    d.position.set(d.userData.x, y, d.userData.z);
+  });
+
+  // camera zooms out as the tree grows
+  const f = smooth(r(5, 7));
+  const dist = lerp(4.2, 13, f);
+  camera.position.set(Math.sin(t * 0.25) * 0.5 * (1 + f), lerp(1.0, 3.5, f), dist);
+  camera.lookAt(0, lerp(-0.4, 2.5, f), 0);
+}
+
+// ---------- controls ----------
+let stage = 0, p = 0, target = 1, soundOn = true;
+const $ = id => document.getElementById(id);
+const dotsEl = $("dots");
+STAGES.forEach((s, i) => {
+  const d = document.createElement("button");
+  d.className = "dot";
+  d.setAttribute("aria-label", "Step " + (i + 1));
+  d.onclick = () => go(i);
+  dotsEl.appendChild(d);
+});
+
+function speak(){
+  if (!soundOn || !("speechSynthesis" in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(STAGES[stage].t);
+    u.rate = 0.85; u.pitch = 1.1;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function show(){
+  $("emoji").textContent = STAGES[stage].e;
+  $("words").textContent = STAGES[stage].t;
+  [...dotsEl.children].forEach((d, i) => d.classList.toggle("on", i === stage));
+  $("back").disabled = stage === 0;
+  $("next").textContent = stage === STAGES.length - 1 ? "Again 🔁" : "Next ▶";
+}
+function go(i){
+  stage = i; target = i + 1;
+  show(); speak();
+}
+$("next").onclick = () => {
+  if (stage === STAGES.length - 1){ p = 0; go(0); }
+  else go(stage + 1);
+};
+$("back").onclick = () => { if (stage > 0) go(stage - 1); };
+$("sound").onclick = () => {
+  soundOn = !soundOn;
+  $("sound").textContent = soundOn ? "🔊" : "🔇";
+  $("sound").setAttribute("aria-pressed", String(soundOn));
+  if (soundOn) speak(); else if ("speechSynthesis" in window) speechSynthesis.cancel();
+};
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") $("next").click();
+  if (e.key === "ArrowLeft") $("back").click();
+});
+show();
+
+// ---------- loop ----------
+const clock = new THREE.Clock();
+let t = 0;
+function loop(){
+  const dt = Math.min(clock.getDelta(), 0.05);
+  t += dt;
+  const diff = target - p;
+  p += clamp(diff, -dt * 0.6, dt * 0.6);
+  clouds.forEach((c, i) => { c.position.x += dt * (0.15 + i * 0.05); if (c.position.x > 16) c.position.x = -16; });
+  update(p, t);
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
