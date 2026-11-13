@@ -9,9 +9,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#eef6e4; --panel:#eef6e4; --text:#2f3a1f; --muted:#5f6b4c;
+  --bg:#eef6e4; --text:#2f3a1f; --muted:#5f6b4c;
   --go:#3f8f2a; --go-text:#ffffff; --soft:#d9e8c6; --soft-text:#2f3a1f;
-  --dot:#c6d8ad; --dot-on:#3f8f2a; --pill:#ffffffd9; --pill-text:#2f3a1f; --focus:#1d5fbf;
+  --dot:#c6d8ad; --dot-on:#3f8f2a; --pill:#ffffffe0; --pill-text:#2f3a1f;
+  --season:#fff4d6; --season-text:#6a4a12; --focus:#1d5fbf; --flash:#ffffff;
   color-scheme:light;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
@@ -19,16 +20,18 @@
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --bg:#172012; --panel:#172012; --text:#eef4e4; --muted:#b4c2a0;
+    --bg:#172012; --text:#eef4e4; --muted:#b4c2a0;
     --go:#7cc85a; --go-text:#10200a; --soft:#2a3822; --soft-text:#eef4e4;
-    --dot:#38492e; --dot-on:#7cc85a; --pill:#172012d9; --pill-text:#eef4e4; --focus:#8fc1ff;
+    --dot:#38492e; --dot-on:#7cc85a; --pill:#172012e0; --pill-text:#eef4e4;
+    --season:#3a2e14e8; --season-text:#ffe3a3; --focus:#8fc1ff; --flash:#172012;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#172012; --panel:#172012; --text:#eef4e4; --muted:#b4c2a0;
+  --bg:#172012; --text:#eef4e4; --muted:#b4c2a0;
   --go:#7cc85a; --go-text:#10200a; --soft:#2a3822; --soft-text:#eef4e4;
-  --dot:#38492e; --dot-on:#7cc85a; --pill:#172012d9; --pill-text:#eef4e4; --focus:#8fc1ff;
+  --dot:#38492e; --dot-on:#7cc85a; --pill:#172012e0; --pill-text:#eef4e4;
+  --season:#3a2e14e8; --season-text:#ffe3a3; --focus:#8fc1ff; --flash:#172012;
   color-scheme:dark;
 }
 *,*::before,*::after{box-sizing:border-box}
@@ -37,35 +40,54 @@ body{
   margin:0;height:100%;display:flex;flex-direction:column;
   background:var(--bg);color:var(--text);
   font-family:"Baloo 2","Trebuchet MS","Verdana",system-ui,sans-serif;
+  -webkit-tap-highlight-color:transparent;
 }
 #scene{flex:1;min-height:0;position:relative;overflow:hidden}
-#scene canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.title{
-  position:absolute;top:12px;left:12px;margin:0;
-  background:var(--pill);color:var(--pill-text);
-  font-size:clamp(18px,3.5vw,26px);font-weight:800;line-height:1.1;
-  padding:6px 14px;border-radius:999px;
-}
-.panel{background:var(--panel);padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px;align-items:center}
-.say{display:flex;align-items:center;gap:14px;max-width:760px;width:100%;min-height:72px}
-.emoji{font-size:clamp(44px,9vw,64px);line-height:1;flex:none}
+#scene canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#scene canvas:active{cursor:grabbing}
+.top{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;pointer-events:none}
+.pill{margin:0;border-radius:999px;padding:5px 14px;line-height:1.15;font-weight:800}
+.title{background:var(--pill);color:var(--pill-text);font-size:clamp(18px,3.5vw,26px)}
+.season{background:var(--season);color:var(--season-text);font-size:clamp(16px,3vw,22px)}
+.season.bump{animation:bump .5s ease}
+@keyframes bump{40%{transform:scale(1.15) rotate(-3deg)}}
+.hint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--pill);color:var(--pill-text);font-size:clamp(15px,2.8vw,19px);font-weight:700;border-radius:999px;padding:4px 14px;pointer-events:none;white-space:nowrap;transition:opacity .6s}
+.hint.gone{opacity:0}
+#flash{position:absolute;inset:0;background:var(--flash);opacity:0;pointer-events:none}
+#flash.go{animation:flash .9s ease}
+@keyframes flash{30%{opacity:1}100%{opacity:0}}
+.panel{padding:12px 16px 16px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.say{display:flex;align-items:center;gap:14px;max-width:760px;width:100%;min-height:76px}
+.emoji{font-size:clamp(46px,9vw,66px);line-height:1;flex:none}
+.emoji.bump{animation:bump .5s ease}
 .words{font-size:clamp(22px,4.6vw,32px);font-weight:700;line-height:1.2;margin:0}
 .dots{display:flex;gap:10px}
-.dot{width:16px;height:16px;border-radius:50%;background:var(--dot);border:0;padding:0;cursor:pointer}
-.dot.on{background:var(--dot-on);transform:scale(1.25)}
+.dot{width:16px;height:16px;border-radius:50%;background:var(--dot);border:0;padding:0;cursor:pointer;transition:transform .2s,background .2s}
+.dot.on{background:var(--dot-on);transform:scale(1.3)}
 .btns{display:flex;gap:12px;width:100%;max-width:760px}
 button{font:inherit;cursor:pointer;border:0}
 button:focus-visible{outline:4px solid var(--focus);outline-offset:3px}
-.b{border-radius:22px;font-size:clamp(20px,4.5vw,28px);font-weight:800;padding:12px 18px;min-height:64px}
+.b{border-radius:22px;font-size:clamp(20px,4.5vw,28px);font-weight:800;padding:12px 18px;min-height:64px;transition:transform .1s}
+.b:active{transform:scale(.95)}
 .soft{background:var(--soft);color:var(--soft-text)}
 .go{background:var(--go);color:var(--go-text);flex:1}
+.go.ready{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.04)}}
 .b:disabled{opacity:.4;cursor:default}
-@media (prefers-reduced-motion:reduce){.dot.on{transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .go.ready,.season.bump,.emoji.bump,#flash.go{animation:none}
+  .dot.on{transform:none}
+}
 </style>
 </head>
 <body>
 <div id="scene" aria-label="3D picture of an acorn growing into an oak tree">
-  <h1 class="title">🌰 Acorn to Oak 🌳</h1>
+  <div class="top">
+    <h1 class="pill title">🌰 Acorn to Oak</h1>
+    <p class="pill season" id="season">🍂 Fall</p>
+  </div>
+  <div class="hint" id="hint">👆 Tap things in the picture!</div>
+  <div id="flash"></div>
 </div>
 <div class="panel">
   <div class="say" aria-live="polite">
@@ -75,7 +97,7 @@ button:focus-visible{outline:4px solid var(--focus);outline-offset:3px}
   <div class="dots" id="dots"></div>
   <div class="btns">
     <button class="b soft" id="back" aria-label="Back">◀</button>
-    <button class="b soft" id="sound" aria-pressed="true" aria-label="Read aloud">🔊</button>
+    <button class="b soft" id="sound" aria-pressed="true" aria-label="Sound and read aloud">🔊</button>
     <button class="b go" id="next">Next ▶</button>
   </div>
 </div>
@@ -83,23 +105,100 @@ button:focus-visible{outline:4px solid var(--focus);outline-offset:3px}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const STAGES = [
-  {e:"🌰", t:"Plop! An acorn falls to the ground."},
-  {e:"🐿️", t:"A squirrel hides it in the dirt."},
-  {e:"💧", t:"Rain falls. A root grows down to drink the water."},
-  {e:"🌱", t:"A tiny sprout pops up to see the sun!"},
-  {e:"🍃", t:"It grows leaves. Now it’s a seedling."},
-  {e:"🌿", t:"It keeps growing into a young tree called a sapling."},
-  {e:"🌳", t:"Many years later, a big oak tree! It grows new acorns."}
+  {e:"🌰", s:"🍂 Fall",              t:"Plop! An acorn falls to the ground."},
+  {e:"🐿️", s:"🍂 Fall",              t:"A squirrel digs a hole and hides the acorn."},
+  {e:"💧", s:"🍂 Fall",              t:"Rain soaks the dirt. A root grows down for a drink."},
+  {e:"❄️", s:"❄️ Winter",            t:"All winter, the acorn rests under the snow."},
+  {e:"🌱", s:"🌷 Spring",            t:"Spring! A tiny sprout pops up to find the sun."},
+  {e:"🍃", s:"☀️ Summer",            t:"It grows oak leaves. Now it’s a seedling."},
+  {e:"🌿", s:"📅 A few years later", t:"A few years later, it’s a young tree called a sapling."},
+  {e:"🌳", s:"📅 20 years later",    t:"Twenty years later, a big oak! It makes new acorns."}
 ];
 
-// ---------- three.js setup ----------
+// ---------- helpers ----------
+let seed = 11;
+const rand = () => (seed = (seed * 16807) % 2147483647, (seed - 1) / 2147483646);
+const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
+const lerp = (a,b,t) => a + (b - a) * t;
+const smooth = t => t * t * (3 - 2 * t);
+const mat = (c, o) => new THREE.MeshLambertMaterial(Object.assign({color:c}, o || {}));
+const basic = (c, o) => new THREE.MeshBasicMaterial(Object.assign({color:c}, o || {}));
+function shown(o){ while (o){ if (!o.visible) return false; o = o.parent; } return true; }
+function canvasTex(w, h, draw){
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  draw(c.getContext("2d"), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+function speckle(n, spread, rmax){
+  return canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = "#fff"; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < n; i++){
+      const v = 255 - Math.floor(rand() * spread);
+      g.fillStyle = `rgb(${v},${v},${v})`;
+      g.beginPath(); g.arc(rand() * w, rand() * h, 1 + rand() * rmax, 0, 7); g.fill();
+    }
+  });
+}
+
+// ---------- sound (all made in the browser, no files) ----------
+let soundOn = true, ac = null;
+function audio(){
+  if (!ac){ try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+  if (ac.state === "suspended") ac.resume();
+  return ac;
+}
+function tone(f1, f2, dur, type, vol, delay){
+  if (!soundOn) return; const a = audio(); if (!a) return;
+  const t0 = a.currentTime + (delay || 0);
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type || "sine";
+  o.frequency.setValueAtTime(f1, t0);
+  o.frequency.exponentialRampToValueAtTime(f2, t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol || 0.2, t0 + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(a.destination);
+  o.start(t0); o.stop(t0 + dur + 0.05);
+}
+let noiseBuf = null;
+function noise(dur, vol, freq){
+  if (!soundOn) return; const a = audio(); if (!a) return;
+  if (!noiseBuf){
+    noiseBuf = a.createBuffer(1, a.sampleRate, a.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(), t0 = a.currentTime;
+  s.buffer = noiseBuf; f.type = "bandpass"; f.frequency.value = freq; f.Q.value = 0.8;
+  g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  s.connect(f); f.connect(g); g.connect(a.destination);
+  s.start(t0); s.stop(t0 + dur + 0.05);
+}
+const SFX = {
+  plop:   () => tone(420, 110, 0.25, "sine", 0.3),
+  tick:   () => tone(300, 160, 0.1, "sine", 0.15),
+  pop:    () => tone(500, 1300, 0.12, "sine", 0.25),
+  chime:  () => { tone(880,880,.4,"triangle",.14); tone(1320,1320,.5,"triangle",.12,.12); tone(1760,1760,.6,"triangle",.1,.24); },
+  squeak: () => { tone(1300, 1900, 0.09, "square", 0.04); tone(1500, 2100, 0.09, "square", 0.04, 0.12); },
+  boop:   () => tone(330, 520, 0.15, "sine", 0.25),
+  boing:  () => tone(180, 620, 0.35, "triangle", 0.2),
+  rustle: () => noise(0.45, 0.25, 3200),
+  dig:    () => noise(0.09, 0.3, 500),
+  sun:    () => { tone(660,660,.25,"sine",.12); tone(990,990,.35,"sine",.1,.1); }
+};
+
+// ---------- scene ----------
 const wrap = document.getElementById("scene");
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 wrap.insertBefore(renderer.domElement, wrap.firstChild);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xbfe6ff);
-scene.fog = new THREE.Fog(0xbfe6ff, 20, 45);
+scene.fog = new THREE.Fog(0xbfe6ff, 22, 48);
 const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
 function resize(){
   const w = wrap.clientWidth, h = wrap.clientHeight;
@@ -111,219 +210,627 @@ function resize(){
 new ResizeObserver(resize).observe(wrap);
 resize();
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x6b4a2b, 0.8));
-const sunLight = new THREE.DirectionalLight(0xfff2d0, 0.75);
-sunLight.position.set(-5, 8, 6);
+const hemi = new THREE.HemisphereLight(0xffffff, 0x6b4a2b, 0.75);
+scene.add(hemi);
+const sunLight = new THREE.DirectionalLight(0xfff2d0, 0.8);
+sunLight.position.set(-6, 10, 8);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(1024, 1024);
+Object.assign(sunLight.shadow.camera, {left:-8, right:8, top:10, bottom:-4, near:1, far:40});
+sunLight.shadow.bias = -0.0015;
 scene.add(sunLight);
+const cast = o => { o.traverse(m => { if (m.isMesh) m.castShadow = true; }); return o; };
 
-const mat = (c, o) => new THREE.MeshLambertMaterial(Object.assign({color:c}, o || {}));
-const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
-const lerp = (a,b,t) => a + (b - a) * t;
-const smooth = t => t * t * (3 - 2 * t);
-
-// Ground: see-through soil so kids can watch underground
+// ground (the dirt is see-through so we can watch underground)
 const DEPTH = 30, FRONT = 0.5;
+const soilTex = speckle(900, 130, 3); soilTex.repeat.set(3, 1);
 const soil = new THREE.Mesh(new THREE.BoxGeometry(12, 3.5, DEPTH),
-  mat(0x7a4e2d, {transparent:true, opacity:0.55, depthWrite:false}));
+  mat(0x7a4e2d, {map:soilTex, transparent:true, opacity:0.6, depthWrite:false}));
 soil.position.set(0, -0.08 - 1.75, FRONT - DEPTH / 2);
 scene.add(soil);
-const grass = new THREE.Mesh(new THREE.BoxGeometry(12, 0.08, DEPTH), mat(0x6cbf45));
+const grassTex = speckle(1400, 70, 2); grassTex.repeat.set(5, 12);
+const grassMat = mat(0x6cbf45, {map:grassTex});
+const grass = new THREE.Mesh(new THREE.BoxGeometry(12, 0.08, DEPTH), grassMat);
 grass.position.set(0, -0.04, FRONT - DEPTH / 2);
+grass.receiveShadow = true;
+grass.userData.kind = "grass";
 scene.add(grass);
+const snowMat = mat(0xffffff, {transparent:true, opacity:0});
+const snowCover = new THREE.Mesh(new THREE.BoxGeometry(12, 0.03, DEPTH), snowMat);
+snowCover.position.set(0, 0.02, FRONT - DEPTH / 2);
+snowCover.receiveShadow = true;
+scene.add(snowCover);
 
-// pebbles in the dirt
 const pebbleMat = mat(0x9a9488);
-[[-1.6,-0.6],[1.4,-1.1],[-0.9,-1.9],[2.2,-2.4],[-2.4,-2.8],[0.9,-2.9],[-1.9,-1.4]].forEach(([x,y],i)=>{
-  const m = new THREE.Mesh(new THREE.SphereGeometry(0.1 + (i % 3) * 0.04, 8, 6), pebbleMat);
-  m.position.set(x, y, 0.2);
-  m.scale.y = 0.7;
+[[-1.6,-0.6],[1.4,-1.1],[-0.9,-1.9],[2.2,-2.4],[-2.4,-2.8],[0.9,-2.9],[-1.9,-1.3],[2.8,-0.5],[-3,-1.8]].forEach(([x,y],i)=>{
+  const m = new THREE.Mesh(new THREE.DodecahedronGeometry(0.1 + (i % 3) * 0.05, 0), pebbleMat);
+  m.position.set(x, y, 0.2); m.scale.y = 0.7; m.rotation.set(i, i * 2, 0);
   scene.add(m);
 });
 
+// wiggly worm
+const worm = new THREE.Group();
+const wormMat = mat(0xe8899a);
+const wormBits = [];
+for (let i = 0; i < 8; i++){
+  const b = new THREE.Mesh(new THREE.SphereGeometry(0.055 - i * 0.003, 10, 8), wormMat);
+  worm.add(b); wormBits.push(b);
+}
+worm.position.set(-1.8, -1.55, 0.3);
+worm.userData.kind = "worm";
+scene.add(worm);
+
 // grass tufts
 const tuftMat = mat(0x4fa32e);
-for (let i = 0; i < 60; i++){
-  const x = (Math.random() - 0.5) * 11, z = FRONT - 0.1 - Math.random() * 10;
-  if (Math.abs(x) < 0.7 && z > -0.7) continue;
-  const m = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.22, 4), tuftMat);
+for (let i = 0; i < 80; i++){
+  const x = (rand() - 0.5) * 11, z = FRONT - 0.1 - rand() * 12;
+  if (Math.abs(x) < 0.8 && z > -0.8) continue;
+  const m = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.2 + rand() * 0.1, 4), tuftMat);
   m.position.set(x, 0.1, z);
   scene.add(m);
 }
 
-// sun + clouds
-const sun = new THREE.Mesh(new THREE.SphereGeometry(1.3, 24, 16), new THREE.MeshBasicMaterial({color:0xffd84a}));
-sun.position.set(-8, 9, -16);
-scene.add(sun);
-const clouds = [];
-const cloudMat = mat(0xffffff);
-for (let i = 0; i < 4; i++){
-  const c = new THREE.Group();
-  [[0,0,0.9],[0.9,-0.1,0.7],[-0.9,-0.1,0.7],[0.3,0.4,0.6]].forEach(([x,y,r])=>{
-    const s = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 10), cloudMat);
-    s.position.set(x, y, 0);
-    c.add(s);
-  });
-  c.position.set(-12 + i * 7, 6 + (i % 2), -12 - i);
-  scene.add(c);
-  clouds.push(c);
-}
-
-// acorn
-function makeAcorn(){
-  const g = new THREE.Group();
-  const nut = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12), mat(0xc08040));
-  nut.scale.set(1, 1.35, 1); nut.position.y = -0.03; g.add(nut);
-  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat(0x6b4423));
-  cap.position.y = 0.06; cap.scale.y = 0.7; g.add(cap);
-  const st = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.06, 6), mat(0x4a2f18));
-  st.position.y = 0.17; g.add(st);
+// oak leaf shape (wavy lobes)
+function oakLeafGeo(){
+  const top = [], bot = [], N = 40;
+  for (let i = 0; i <= N; i++){
+    const x = i / N;
+    const w = Math.pow(Math.sin(Math.PI * x), 0.8) * 0.3 * (0.72 + 0.28 * Math.cos(x * Math.PI * 2 * 3.5));
+    top.push(new THREE.Vector2(x, w)); bot.unshift(new THREE.Vector2(x, -w));
+  }
+  const g = new THREE.ShapeGeometry(new THREE.Shape(top.concat(bot)));
+  g.rotateX(-Math.PI / 2);
   return g;
 }
-const acorn = makeAcorn();
-acorn.scale.setScalar(1.5);
+const LEAF = oakLeafGeo();
+
+// spring flowers
+const flowerCols = [0xff7aa8, 0xffd23f, 0xb38cff, 0xffffff, 0xff8f4a];
+const flowers = [];
+function makeFlower(col){
+  const f = new THREE.Group();
+  const st = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.25, 5), mat(0x3f8f2a));
+  st.position.y = 0.125; f.add(st);
+  const pm = mat(col);
+  for (let k = 0; k < 5; k++){
+    const pt = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), pm);
+    const a = k / 5 * Math.PI * 2;
+    pt.position.set(Math.cos(a) * 0.05, 0.26, Math.sin(a) * 0.05);
+    pt.scale.y = 0.5; f.add(pt);
+  }
+  const c = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), mat(0xffb300));
+  c.position.y = 0.27; f.add(c);
+  return cast(f);
+}
+[[-1.4,0.3],[1.7,0.1],[-2.3,-0.6],[2.5,-1],[-0.9,-1.4],[1,-1.8],[-3.5,-2],[3.6,-2.5],[-4.5,-4],[4.2,-3.5],[0.4,-3],[-2,-3.4],[2.2,-4.5]]
+  .forEach(([x,z], i) => {
+    const f = makeFlower(flowerCols[i % flowerCols.length]);
+    f.position.set(x, 0, z); f.rotation.y = i;
+    scene.add(f); flowers.push(f);
+  });
+const tapFlowers = [];
+
+// smiling sun
+const sun = new THREE.Group();
+sun.add(new THREE.Mesh(new THREE.SphereGeometry(1.3, 24, 16), basic(0xffd84a)));
+const faceMat = basic(0x7a4a12);
+[-0.42, 0.42].forEach(x => { const e = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), faceMat); e.position.set(x, 0.3, 1.2); sun.add(e); });
+const smile = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.08, 8, 20, Math.PI), faceMat);
+smile.rotation.z = Math.PI; smile.position.set(0, 0, 1.18); sun.add(smile);
+const cheekMat = basic(0xffa24a);
+[-0.8, 0.8].forEach(x => { const c = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 8), cheekMat); c.position.set(x, -0.15, 1.02); c.scale.z = 0.3; sun.add(c); });
+const rays = new THREE.Group();
+for (let i = 0; i < 10; i++){
+  const r = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.6, 6), basic(0xffc21a));
+  const a = i / 10 * Math.PI * 2;
+  r.position.set(Math.cos(a) * 1.75, Math.sin(a) * 1.75, 0);
+  r.rotation.z = a - Math.PI / 2;
+  rays.add(r);
+}
+sun.add(rays);
+sun.position.set(-8, 9, -16);
+sun.userData.kind = "sun";
+scene.add(sun);
+
+// clouds
+const clouds = [];
+const cloudMat = mat(0xffffff);
+for (let i = 0; i < 5; i++){
+  const c = new THREE.Group();
+  [[0,0,0.9],[0.9,-0.1,0.7],[-0.9,-0.1,0.7],[0.3,0.45,0.65],[-0.4,0.35,0.55]].forEach(([x,y,r])=>{
+    const s = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), cloudMat);
+    s.position.set(x, y, 0); c.add(s);
+  });
+  c.position.set(-14 + i * 6.5, 6 + (i % 3) * 0.8, -12 - i * 1.5);
+  scene.add(c); clouds.push(c);
+}
+
+// bird
+const bird = new THREE.Group();
+const birdMat = mat(0x3b4a6b, {side:THREE.DoubleSide});
+const bBody = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), birdMat); bBody.scale.set(1.8, 1, 1); bird.add(bBody);
+const wingGeo = new THREE.BoxGeometry(0.22, 0.02, 0.45); wingGeo.translate(0, 0, 0.22);
+const wingL = new THREE.Mesh(wingGeo, birdMat), wingR = new THREE.Mesh(wingGeo, birdMat);
+wingR.rotation.y = Math.PI; bird.add(wingL, wingR);
+scene.add(bird);
+
+// butterfly
+const fly = new THREE.Group();
+const wingShape = new THREE.Shape([new THREE.Vector2(0,0), new THREE.Vector2(0.16,0.12), new THREE.Vector2(0.2,0.02), new THREE.Vector2(0.14,-0.1), new THREE.Vector2(0.05,-0.08)]);
+const bwGeo = new THREE.ShapeGeometry(wingShape); bwGeo.rotateX(-Math.PI / 2);
+const bwMat = mat(0xb36cff, {side:THREE.DoubleSide});
+const fwL = new THREE.Mesh(bwGeo, bwMat), fwR = new THREE.Mesh(bwGeo, bwMat);
+fwR.scale.x = -1;
+fly.add(fwL, fwR);
+const flyBody = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.16, 6), mat(0x2b2b2b));
+flyBody.rotation.x = Math.PI / 2; fly.add(flyBody);
+scene.add(fly);
+
+// acorn (the buried one can crack open)
+function makeAcorn(split){
+  const g = new THREE.Group();
+  const nutMat = mat(0xc08040), capMat = mat(0x6b4423);
+  const halves = [];
+  if (split){
+    [0, Math.PI].forEach(ph => {
+      const h = new THREE.Group();
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12, ph, Math.PI), nutMat);
+      m.scale.set(1, 1.35, 1); m.position.y = -0.03;
+      h.add(m); g.add(h); halves.push(h);
+    });
+  } else {
+    const nut = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12), nutMat);
+    nut.scale.set(1, 1.35, 1); nut.position.y = -0.03; g.add(nut);
+  }
+  const capG = new THREE.Group(); capG.position.y = 0.06; g.add(capG);
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), capMat);
+  cap.scale.y = 0.7; capG.add(cap);
+  const st = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.06, 6), mat(0x4a2f18));
+  st.position.y = 0.11; capG.add(st);
+  g.userData = {halves, cap:capG};
+  return cast(g);
+}
+const acorn = makeAcorn(true);
+acorn.userData.kind = "acorn";
 scene.add(acorn);
+
+const mound = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat(0x6e4526, {map:soilTex}));
+mound.receiveShadow = true;
+scene.add(mound);
+
+// sleepy "Zzz"
+const zTex = canvasTex(256, 128, (g) => {
+  g.font = "bold 80px 'Baloo 2', sans-serif"; g.fillStyle = "#ffffff";
+  g.strokeStyle = "#3b4a6b"; g.lineWidth = 10;
+  g.strokeText("Z z z", 20, 95); g.fillText("Z z z", 20, 95);
+});
+const zzz = new THREE.Sprite(new THREE.SpriteMaterial({map:zTex, transparent:true, depthTest:false}));
+zzz.scale.set(0.8, 0.4, 1);
+scene.add(zzz);
 
 // roots
 const rootMat = mat(0xe8d3a8);
-const rootGeo = new THREE.CylinderGeometry(1, 0.15, 1, 8);
-rootGeo.translate(0, -0.5, 0);
+const rootGeo = new THREE.CylinderGeometry(1, 0.15, 1, 8); rootGeo.translate(0, -0.5, 0);
 const ROOT_TOP = -0.95;
 const mainRoot = new THREE.Mesh(rootGeo, rootMat);
 mainRoot.position.set(0, ROOT_TOP, 0);
 scene.add(mainRoot);
-const sideRoots = [[-0.9,0.35],[0.9,0.55],[-0.8,0.8],[1.0,1.0]].map(([rz,d])=>{
+const sideRoots = [[-0.9,0.35],[0.9,0.55],[-0.8,0.8],[1.0,1.0],[-1.1,1.15],[0.7,0.25]].map(([rz,d])=>{
   const m = new THREE.Mesh(rootGeo, rootMat);
-  m.position.set(0, ROOT_TOP - d, 0);
-  m.rotation.z = rz;
-  scene.add(m);
-  return m;
+  m.position.set(0, ROOT_TOP - d, 0); m.rotation.z = rz;
+  scene.add(m); return m;
 });
 
-// stem / trunk
-const stemGeo = new THREE.CylinderGeometry(0.7, 1, 1, 14);
-stemGeo.translate(0, 0.5, 0);
-const stemMat = mat(0x5aa832);
+// stem that becomes a trunk
+const barkTex = canvasTex(128, 256, (g, w, h) => {
+  g.fillStyle = "#fff"; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 26; i++){
+    g.strokeStyle = `rgba(90,60,30,${0.25 + rand() * 0.3})`; g.lineWidth = 2 + rand() * 4;
+    let x = rand() * w; g.beginPath(); g.moveTo(x, 0);
+    for (let y = 0; y <= h; y += 16){ x += (rand() - 0.5) * 8; g.lineTo(x, y); }
+    g.stroke();
+  }
+});
+const stemGeo = new THREE.CylinderGeometry(0.7, 1, 1, 16); stemGeo.translate(0, 0.5, 0);
+const stemMat = mat(0x5aa832, {map:barkTex});
 const stem = new THREE.Mesh(stemGeo, stemMat);
 const STEM_BASE = -0.45;
 stem.position.set(0, STEM_BASE, 0);
+stem.castShadow = true;
+stem.userData.kind = "tree";
 scene.add(stem);
 const GREEN = new THREE.Color(0x5aa832), BROWN = new THREE.Color(0x6b4a2b);
 
 // seedling leaves
-const leafMat = mat(0x58b033);
-const leafGeo = new THREE.SphereGeometry(1, 12, 8);
+const leafMat = mat(0x58b033, {side:THREE.DoubleSide});
 const leaves = [];
 for (let i = 0; i < 6; i++){
   const pivot = new THREE.Group();
-  const leaf = new THREE.Mesh(leafGeo, leafMat);
-  leaf.scale.set(0.17, 0.025, 0.08);
-  leaf.position.x = 0.16;
-  leaf.rotation.z = 0.35;
+  const leaf = new THREE.Mesh(LEAF, leafMat);
+  leaf.scale.setScalar(0.42); leaf.rotation.z = 0.85; leaf.castShadow = true;
   pivot.add(leaf);
   pivot.rotation.y = i < 2 ? i * Math.PI : (i * Math.PI / 2) + 0.7;
-  scene.add(pivot);
-  leaves.push(pivot);
+  pivot.userData.kind = "tree";
+  scene.add(pivot); leaves.push(pivot);
 }
 
 // big canopy
 const canopy = new THREE.Group();
+canopy.userData.kind = "tree";
+const clumps = [];
 const greens = [0x3f8f2a, 0x4fa32e, 0x5cb338, 0x468f2c];
-[[0,0,0,1.3],[1.2,-0.2,0.3,1],[-1.2,-0.1,-0.2,1.05],[0.5,0.8,-0.5,1],[-0.6,0.7,0.6,0.95],
- [0.3,-0.4,1,0.9],[-0.3,-0.3,-1,0.95],[1.5,0.4,-0.6,0.8],[-1.5,0.3,0.6,0.8],[0,1.2,0,0.9]]
- .forEach(([x,y,z,r],i)=>{
+const autumns = [0xe0892b, 0xc9502a, 0xe8b23a, 0x9c6b2a];
+const branchMat = mat(0x6b4a2b, {map:barkTex});
+[[1.2,0.4,0.5],[-1.2,0.5,-0.4],[0.3,0.9,-1.1],[-0.4,0.8,1.1]].forEach(([x,y,z]) => {
+  const len = Math.hypot(x, y + 0.8, z);
+  const b = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.13, len, 8), branchMat);
+  b.position.set(x / 2, (y - 0.8) / 2, z / 2);
+  b.lookAt(new THREE.Vector3(x, y, z)); b.rotateX(Math.PI / 2);
+  canopy.add(b);
+});
+const clumpPos = [[0,0.3,0,1.3]];
+for (let i = 0; i < 15; i++){
+  const a = rand() * Math.PI * 2, u = rand() * 2 - 1, rr = 0.9 + rand() * 0.7;
+  const s = Math.sqrt(1 - u * u);
+  clumpPos.push([Math.cos(a) * s * rr * 1.5, 0.2 + u * rr * 0.85, Math.sin(a) * s * rr * 1.25, 0.65 + rand() * 0.45]);
+}
+clumpPos.forEach(([x,y,z,r], i) => {
   const m = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), mat(greens[i % 4], {flatShading:true}));
-  m.position.set(x, y, z);
-  canopy.add(m);
+  m.position.set(x, y, z); m.rotation.set(i, i * 0.7, 0);
+  m.userData = {g:new THREE.Color(greens[i % 4]), a:new THREE.Color(autumns[i % 4]), mix:0.35 + (i % 3) * 0.25};
+  canopy.add(m); clumps.push(m);
 });
 const newAcorns = [];
-for (let i = 0; i < 10; i++){
-  const a = makeAcorn();
-  const ang = i / 10 * Math.PI * 2 + 0.3;
-  a.position.set(Math.cos(ang) * 2.15, -0.7 + (i % 3) * 0.45, Math.sin(ang) * 2.0);
-  canopy.add(a);
-  newAcorns.push(a);
+for (let i = 0; i < 12; i++){
+  const a = makeAcorn(false);
+  const ang = i / 12 * Math.PI * 2 + 0.3;
+  a.position.set(Math.cos(ang) * 1.85, -0.55 + (i % 3) * 0.35, Math.sin(ang) * 1.6);
+  canopy.add(a); newAcorns.push(a);
 }
+cast(canopy);
 scene.add(canopy);
 
-// rain
-const rainMat = new THREE.MeshBasicMaterial({color:0x3d8fe0, transparent:true, opacity:0});
+// squirrel
+function makeSquirrel(){
+  const g = new THREE.Group(), pose = new THREE.Group(); g.add(pose);
+  const fur = mat(0xb5652e), belly = mat(0xf1d9b5), dark = mat(0x222222);
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 12), fur);
+  body.scale.set(1.2, 1, 0.9); body.position.y = 0.22; pose.add(body);
+  const bel = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10), belly);
+  bel.position.set(0.07, 0.2, 0); bel.scale.set(0.8, 1, 0.85); pose.add(bel);
+  const head = new THREE.Group(); head.position.set(0.24, 0.42, 0); pose.add(head);
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 12), fur));
+  const snout = new THREE.Mesh(new THREE.SphereGeometry(0.065, 10, 8), belly); snout.position.set(0.1, -0.03, 0); head.add(snout);
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 6), dark); nose.position.set(0.165, -0.01, 0); head.add(nose);
+  [-1, 1].forEach(s => {
+    const e = new THREE.Mesh(new THREE.SphereGeometry(0.026, 8, 6), dark); e.position.set(0.07, 0.04, 0.09 * s); head.add(e);
+    const glint = new THREE.Mesh(new THREE.SphereGeometry(0.009, 6, 4), basic(0xffffff)); glint.position.set(0.09, 0.055, 0.1 * s); head.add(glint);
+    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.11, 6), fur); ear.position.set(-0.02, 0.13, 0.065 * s); head.add(ear);
+    [0.1, -0.1].forEach(fx => { const ft = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), fur); ft.position.set(fx, 0.03, 0.1 * s); ft.scale.set(1.4, 0.6, 1); pose.add(ft); });
+  });
+  const tail = new THREE.Group(); tail.position.set(-0.2, 0.18, 0); pose.add(tail);
+  for (let i = 0; i < 9; i++){
+    const a = i / 8;
+    const s = new THREE.Mesh(new THREE.SphereGeometry(0.07 + 0.06 * Math.sin(a * Math.PI * 0.85), 10, 8), fur);
+    s.position.set(-0.12 * Math.sin(a * Math.PI) + a * a * 0.16, a * 0.6, 0);
+    tail.add(s);
+  }
+  g.userData = {pose, head, tail, kind:"squirrel"};
+  return cast(g);
+}
+const squirrel = makeSquirrel();
+scene.add(squirrel);
+
+// weather and floaty things
+const rainMat = basic(0x3d8fe0, {transparent:true, opacity:0});
 const drops = [];
-for (let i = 0; i < 50; i++){
-  const d = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 6), rainMat);
-  d.scale.y = 2.2;
-  d.userData = {x:(Math.random() - 0.5) * 5, z:-1 - Math.random() * 1.5, o:Math.random()};
-  scene.add(d);
-  drops.push(d);
+for (let i = 0; i < 60; i++){
+  const d = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), rainMat);
+  d.scale.y = 2.4;
+  d.userData = {x:(rand() - 0.5) * 6, z:-1.5 + rand() * 1.8, o:rand()};
+  scene.add(d); drops.push(d);
+}
+const snowMatP = basic(0xffffff, {transparent:true, opacity:0});
+const flakes = [];
+for (let i = 0; i < 90; i++){
+  const d = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 6), snowMatP);
+  d.userData = {x:(rand() - 0.5) * 7, z:-2 + rand() * 2.3, o:rand(), w:rand() * 6};
+  scene.add(d); flakes.push(d);
+}
+const fallLeafMats = autumns.map(c => mat(c, {side:THREE.DoubleSide}));
+const fallLeaves = [];
+for (let i = 0; i < 26; i++){
+  const m = new THREE.Mesh(LEAF, fallLeafMats[i % 4]);
+  m.scale.setScalar(0.22);
+  m.userData = {x:(rand() - 0.5), z:rand(), o:rand(), w:rand() * 6, s:0.15 + rand() * 0.15};
+  scene.add(m); fallLeaves.push(m);
 }
 
-// ---------- the story, driven by one number p (0 to 7) ----------
-function update(p, t){
+// little bursts: dirt, sparkles, leaves
+const parts = [];
+const PART = {
+  dirt:  {geo:new THREE.BoxGeometry(0.05, 0.05, 0.05), mat:mat(0x7a4e2d), grav:-7},
+  spark: {geo:new THREE.OctahedronGeometry(0.05), mat:basic(0xffe14d), grav:-0.6},
+  leaf:  {geo:LEAF, mat:fallLeafMats[0], grav:-1.5, scale:0.2}
+};
+function emit(kind, pos, n, spread){
+  const k = PART[kind];
+  for (let i = 0; i < n; i++){
+    const m = new THREE.Mesh(k.geo, kind === "leaf" ? fallLeafMats[i % 4] : k.mat);
+    m.position.copy(pos);
+    m.position.x += (Math.random() - 0.5) * (spread || 0);
+    m.position.y += (Math.random() - 0.5) * (spread || 0) * 0.5;
+    scene.add(m);
+    const sp = kind === "spark" ? 1.6 : 1.2;
+    parts.push({m, k, life:1, base:k.scale || 1,
+      v:new THREE.Vector3((Math.random() - 0.5) * 2 * sp, (0.8 + Math.random() * 1.4) * (kind === "leaf" ? 0.4 : 1), (Math.random() - 0.5) * sp),
+      spin:(Math.random() - 0.5) * 10});
+  }
+}
+function stepParts(dt){
+  for (let i = parts.length - 1; i >= 0; i--){
+    const q = parts[i];
+    q.life -= dt * (q.k === PART.leaf ? 0.45 : 1.3);
+    q.v.y += q.k.grav * dt;
+    q.m.position.addScaledVector(q.v, dt);
+    q.m.rotation.x += q.spin * dt; q.m.rotation.y += q.spin * dt * 0.7;
+    q.m.scale.setScalar(Math.max(q.life, 0.001) * q.base);
+    if (q.life <= 0){ scene.remove(q.m); parts.splice(i, 1); }
+  }
+}
+
+// acorns that drop from the big tree
+const dropped = [];
+function dropAcorn(){
+  const src = newAcorns[Math.floor(Math.random() * newAcorns.length)];
+  const a = makeAcorn(false);
+  src.getWorldPosition(a.position);
+  a.scale.setScalar(1.4);
+  a.userData.v = 0; a.userData.bounce = 0;
+  scene.add(a); dropped.push(a);
+  if (dropped.length > 8) scene.remove(dropped.shift());
+}
+function clearDropped(){ dropped.forEach(a => scene.remove(a)); dropped.length = 0; }
+
+// ---------- the story, driven by one number p (0 to 8) ----------
+const skyBase = new THREE.Color(0xa9dcff), skyFall = new THREE.Color(0xd3e4ee), skyWinter = new THREE.Color(0xd9dfe8);
+const grassBase = new THREE.Color(0x6cbf45), grassFall = new THREE.Color(0x9fae48), grassWinter = new THREE.Color(0x8aa070);
+const tuftBase = new THREE.Color(0x4fa32e), tuftFall = new THREE.Color(0x8c9a3a);
+const fx = {squirrelJump:0, treeJiggle:0, sunSpin:0, acornWobble:0, wormWiggle:0};
+let yaw = 0, yawTarget = 0;
+
+function update(p, t, dt){
   const r = (a,b) => clamp((p - a) / (b - a), 0, 1);
 
-  // acorn falls, gets buried, then gets used up
-  const fall = r(0, 1);
-  const ay = lerp(5.5, 0.3, fall * fall);
-  acorn.position.y = lerp(ay, -0.7, smooth(r(1, 2)));
-  acorn.rotation.z = Math.sin(p * 25) * 0.4 * (1 - fall);
-  const used = 1 - r(4.5, 6);
+  // seasons
+  const W = r(3.1, 3.6) * (1 - r(4.0, 4.5));
+  const F = (1 - r(3.1, 3.6)) + r(7.3, 8);
+  const sky = skyBase.clone().lerp(skyFall, clamp(F, 0, 1)).lerp(skyWinter, W);
+  scene.background.copy(sky); scene.fog.color.copy(sky);
+  grassMat.color.copy(grassBase).lerp(grassFall, clamp(F, 0, 1)).lerp(grassWinter, W);
+  tuftMat.color.copy(tuftBase).lerp(tuftFall, clamp(F, 0, 1));
+  const snowAmt = r(3.3, 3.8) * (1 - r(4.0, 4.5));
+  snowMat.opacity = snowAmt * 0.92; snowCover.visible = snowAmt > 0.01;
+  sunLight.intensity = 0.8 - 0.3 * W;
+  rays.scale.setScalar(1 - 0.35 * W);
+
+  // acorn: falls, bounces, gets buried, cracks open, gets used up
+  const u = r(0, 1);
+  let ay;
+  if (u < 0.7) ay = 5.5 - 5.2 * Math.pow(u / 0.7, 2);
+  else if (u < 0.9){ const k = (u - 0.7) / 0.2; ay = 0.3 + 0.35 * 4 * k * (1 - k); }
+  else { const k = (u - 0.9) / 0.1; ay = 0.3 + 0.1 * 4 * k * (1 - k); }
+  acorn.position.y = lerp(ay, -0.7, smooth(r(1.4, 1.85)));
+  acorn.rotation.z = (u < 0.7 ? (1 - u) * Math.sin(p * 30) * 0.6 : 0) + Math.sin(t * 22) * 0.35 * fx.acornWobble;
+  const crack = smooth(r(4.1, 4.6));
+  acorn.userData.halves[0].rotation.x = -0.35 * crack;
+  acorn.userData.halves[1].rotation.x = 0.35 * crack;
+  acorn.userData.cap.rotation.z = 0.5 * crack;
+  acorn.userData.cap.position.x = 0.06 * crack;
+  const used = 1 - r(6, 7.5);
   acorn.scale.setScalar(1.5 * used);
   acorn.visible = used > 0.01;
 
+  // dirt mound over the hidden acorn
+  const md = r(1.45, 1.85) * (1 - r(5.5, 6.5));
+  mound.visible = md > 0.01;
+  mound.scale.set(Math.max(md, 0.001), Math.max(md, 0.001) * 0.35, Math.max(md, 0.001));
+
+  // squirrel: hops in, digs, sits, hops off. Comes back for the big tree.
+  let sv = false, sx = 0, sy = 0, face = Math.PI, tilt = 0, sc = 1;
+  const hop = (k, n) => Math.abs(Math.sin(k * Math.PI * n)) * 0.28;
+  if (p > 1 && p < 2.4){
+    sv = true;
+    if (p < 1.35){ const k = r(1, 1.35); sx = lerp(3.6, 0.75, k); sy = hop(k, 4); }
+    else if (p < 1.85){ sx = 0.75; tilt = -0.55; }
+    else if (p < 2){ sx = 0.75; }
+    else { const k = r(2, 2.4); sx = lerp(0.75, 4.6, k); sy = hop(k, 5); face = 0; }
+  } else if (p > 7.4){
+    sv = true; face = 0; sc = 1.5;
+    const k = r(7.4, 7.9); sx = lerp(-5, -1.5, k); sy = hop(k, 5);
+  }
+  squirrel.visible = sv;
+  if (sv){
+    const jump = Math.sin(fx.squirrelJump * Math.PI) * 0.5;
+    squirrel.position.set(sx, sy + jump, 0.2);
+    squirrel.rotation.y = face + (face === 0 ? -0.35 : 0.35);
+    squirrel.scale.setScalar(sc);
+    const pose = squirrel.userData.pose;
+    pose.rotation.z = tilt + (tilt ? Math.sin(t * 18) * 0.12 : 0);
+    squirrel.userData.tail.rotation.z = Math.sin(t * 5) * 0.15;
+    squirrel.userData.head.rotation.z = (p > 7.85 ? Math.sin(t * 9) * 0.12 : 0);
+  }
+
+  // sleepy Zzz in winter
+  const zz = r(3.4, 3.8) * (1 - r(4.0, 4.3));
+  zzz.visible = zz > 0.01;
+  zzz.material.opacity = zz;
+  zzz.position.set(0.45, -0.25 + Math.sin(t * 1.5) * 0.08, 0.35);
+
   // roots
-  const len = 0.5 * r(2, 3) + 0.3 * r(3, 5) + 0.5 * r(5, 7);
-  const rr = 0.03 + 0.05 * r(5, 7);
+  const len = 0.5 * r(2.2, 3) + 0.3 * r(4, 6) + 0.5 * r(6, 8);
+  const rr = 0.03 + 0.05 * r(6, 8);
   mainRoot.visible = len > 0.01;
   mainRoot.scale.set(rr, Math.max(len, 0.001), rr);
-  const side = r(4.5, 6.5);
-  sideRoots.forEach(m => {
-    m.visible = side > 0.01;
-    m.scale.set(rr * 0.6, 0.7 * side + 0.001, rr * 0.6);
+  const side = r(5.3, 7.5);
+  sideRoots.forEach((m, i) => {
+    const s = clamp(side * 1.4 - i * 0.12, 0, 1);
+    m.visible = s > 0.01;
+    m.scale.set(rr * 0.6, 0.7 * s + 0.001, rr * 0.6);
   });
 
   // stem becomes trunk
-  const h = 0.8 * r(3, 4) + 0.5 * r(4, 5) + 2.2 * r(5, 6) + 1.9 * r(6, 7);
-  const rad = 0.025 + 0.03 * r(5, 6) + 0.27 * r(6, 7);
+  const h = 0.8 * r(4.2, 5) + 0.5 * r(5, 6) + 2.2 * r(6, 7) + 1.9 * r(7, 8);
+  const rad = 0.035 + 0.025 * r(6, 7) + 0.27 * r(7, 8);
   stem.visible = h > 0.01;
   stem.scale.set(rad, Math.max(h, 0.001), rad);
-  stemMat.color.copy(GREEN).lerp(BROWN, r(5, 6.2));
+  stemMat.color.copy(GREEN).lerp(BROWN, r(6, 7.2));
   const top = STEM_BASE + h;
+  const jig = Math.sin(t * 24) * 0.06 * fx.treeJiggle;
 
-  // little leaves
-  const fade = 1 - r(5.4, 6);
+  // seedling leaves
+  const fade = 1 - r(6.4, 7);
   leaves.forEach((lf, i) => {
-    const s = (i < 2 ? r(3.5, 4) : r(4.3, 5)) * fade;
+    const s = (i < 2 ? r(4.6, 5) : r(5.3, 6)) * fade;
     lf.visible = s > 0.01;
-    lf.scale.setScalar(Math.max(s, 0.001) * 1.6);
-    lf.position.set(0, top - (i < 2 ? 0.02 : 0.15 + (i - 2) * 0.12), 0);
+    lf.scale.setScalar(Math.max(s, 0.001) * (1 + 0.3 * r(5, 6)));
+    lf.position.set(0, top - (i < 2 ? 0.02 : 0.12 + (i - 2) * 0.12), 0);
+    lf.rotation.x = Math.sin(t * 2 + i) * 0.08 + jig * 3;
   });
 
   // canopy
-  const cs = 0.3 * r(5.2, 6) + 0.7 * r(6, 7);
+  const cs = 0.3 * r(6.2, 7) + 0.7 * r(7, 8);
   canopy.visible = cs > 0.01;
   canopy.scale.setScalar(Math.max(cs, 0.001));
   canopy.position.y = top + 0.4 * cs;
-  canopy.rotation.z = Math.sin(t * 0.8) * 0.02;
-  const na = r(6.5, 7);
-  newAcorns.forEach(a => { a.visible = na > 0.01; a.scale.setScalar(Math.max(na, 0.001) * 1.4); });
+  canopy.rotation.z = Math.sin(t * 0.8) * 0.02 + jig;
+  const aut = r(7.4, 8);
+  clumps.forEach(m => m.material.color.copy(m.userData.g).lerp(m.userData.a, aut * m.userData.mix));
+  const na = r(7.5, 7.95);
+  newAcorns.forEach((a, i) => {
+    const s = clamp(na * 1.6 - (i % 4) * 0.15, 0, 1);
+    a.visible = s > 0.01; a.scale.setScalar(Math.max(s, 0.001) * 1.4);
+  });
 
-  // rain during the root stage
-  const rain = r(2.1, 2.5) * (1 - r(3.2, 3.6));
-  rainMat.opacity = rain * 0.85;
-  drops.forEach(d => {
-    d.visible = rain > 0.01;
-    const y = 3 - ((t * 0.9 + d.userData.o) % 1) * 3;
-    d.position.set(d.userData.x, y, d.userData.z);
+  // flowers in spring and summer
+  const fl = r(4.3, 4.9) * (1 - r(7.2, 7.7));
+  flowers.forEach((f, i) => {
+    const s = clamp(fl * 1.5 - (i % 4) * 0.1, 0, 1);
+    f.visible = s > 0.01; f.scale.setScalar(Math.max(s, 0.001));
+    f.rotation.z = Math.sin(t * 1.6 + i) * 0.06;
+  });
+  tapFlowers.forEach(f => {
+    f.userData.age += dt;
+    const k = clamp(f.userData.age / 0.35, 0, 1);
+    f.scale.setScalar(Math.max(0.001, k < 1 ? Math.sin(k * Math.PI * 0.75) * 1.3 : 1));
+    f.rotation.z = Math.sin(t * 1.6 + f.userData.age) * 0.06;
   });
 
   // camera zooms out as the tree grows
-  const f = smooth(r(5, 7));
-  const dist = lerp(4.2, 13, f);
-  camera.position.set(Math.sin(t * 0.25) * 0.5 * (1 + f), lerp(1.0, 3.5, f), dist);
-  camera.lookAt(0, lerp(-0.4, 2.5, f), 0);
+  const f = smooth(r(6, 8));
+
+  // rain while the root grows
+  const rain = r(2.1, 2.5) * (1 - r(3, 3.3));
+  rainMat.opacity = rain * 0.85;
+  drops.forEach(d => {
+    d.visible = rain > 0.01;
+    if (d.visible) d.position.set(d.userData.x, 2.6 - ((t * 1.1 + d.userData.o) % 1) * 2.6, d.userData.z);
+  });
+
+  // snow in winter
+  const snow = r(3.1, 3.4) * (1 - r(4, 4.3));
+  snowMatP.opacity = snow;
+  flakes.forEach(d => {
+    d.visible = snow > 0.01;
+    if (d.visible){
+      const k = (t * 0.25 + d.userData.o) % 1;
+      d.position.set(d.userData.x + Math.sin(t + d.userData.w) * 0.2, 2.8 - k * 2.8, d.userData.z);
+    }
+  });
+
+  // autumn leaves drifting down
+  const fallAmt = clamp((1 - r(2.8, 3.2)) * 0.6 + r(7.5, 8), 0, 1);
+  fallLeaves.forEach((m, i) => {
+    const show = i < fallLeaves.length * fallAmt;
+    m.visible = show;
+    if (!show) return;
+    const ud = m.userData;
+    const k = (t * ud.s + ud.o) % 1;
+    const spanX = lerp(5, 6, f), hTop = lerp(2.6, 6.5, f);
+    m.position.set(ud.x * spanX + Math.sin(t * 1.3 + ud.w) * 0.4, hTop - k * hTop + 0.05, lerp(-1.5, 0.4, ud.z));
+    m.rotation.set(Math.sin(t * 2 + ud.w) * 0.8, t + ud.w, Math.cos(t * 1.7 + ud.w) * 0.6);
+  });
+
+  // butterfly in summer
+  const bf = r(5.3, 5.7) * (1 - r(7, 7.4));
+  fly.visible = bf > 0.01;
+  if (fly.visible){
+    const cy = Math.max(top, 0.3) * 0.6 + 0.5;
+    fly.position.set(Math.cos(t * 0.8) * 1.0, cy + Math.sin(t * 2.3) * 0.25, 0.25 + Math.sin(t * 1.2) * 0.4);
+    fly.rotation.y = -t * 0.8;
+    const flap = Math.sin(t * 22) * 0.9;
+    fwL.rotation.z = flap; fwR.rotation.z = -flap;
+    fly.scale.setScalar(bf);
+  }
+
+  // bird in the sky once the tree is tall
+  bird.visible = p > 6.4;
+  if (bird.visible){
+    const k = (t * 0.06) % 1;
+    bird.position.set(lerp(-14, 14, k), 6.2 + Math.sin(t * 1.5) * 0.4, -5);
+    bird.rotation.y = 0;
+    const flap = Math.sin(t * 9) * 0.6;
+    wingL.rotation.x = -flap; wingR.rotation.x = flap;
+  }
+
+  // worm
+  const wig = 1 + fx.wormWiggle * 4;
+  worm.position.x = -1.8 + Math.sin(t * 0.3) * 0.8;
+  wormBits.forEach((b, i) => b.position.set(i * 0.07, Math.sin(t * 3 * wig - i * 0.9) * 0.04 * (1 + fx.wormWiggle), 0));
+
+  // sun
+  sun.lookAt(camera.position);
+  rays.rotation.z = t * 0.15 + fx.sunSpin * 6;
+  sun.scale.setScalar(1 + Math.sin(fx.sunSpin * Math.PI) * 0.25);
+
+  // clouds
+  clouds.forEach((c, i) => { c.position.x += dt * (0.12 + i * 0.04); if (c.position.x > 18) c.position.x = -18; });
+
+  // dropped acorns bounce on the grass
+  dropped.forEach(a => {
+    if (a.userData.done) return;
+    a.userData.v -= 9 * dt;
+    a.position.y += a.userData.v * dt;
+    a.rotation.z += dt * 6;
+    if (a.position.y < 0.27){
+      a.position.y = 0.27;
+      if (a.userData.bounce < 2){ a.userData.v = 2.2 / (a.userData.bounce + 1); a.userData.bounce++; if (a.userData.bounce === 1) SFX.tick(); }
+      else { a.userData.done = true; a.rotation.z = Math.PI / 2; }
+    }
+  });
+
+  // camera
+  yaw += (yawTarget - yaw) * Math.min(1, dt * 6);
+  const dist = lerp(4.2, 14.5, f);
+  const lookY = lerp(-0.4, 2.9, f);
+  const ang = yaw + Math.sin(t * 0.25) * 0.08;
+  camera.position.set(Math.sin(ang) * dist, lerp(1.0, 3.8, f), Math.cos(ang) * dist);
+  camera.lookAt(0, lookY, 0);
+
+  return {top, cs};
 }
 
+// ---------- story beats (sounds + bursts when the story moves forward) ----------
+const BEATS = [
+  {at:0.7,  fn:() => { SFX.plop(); emit("dirt", new THREE.Vector3(0, 0.05, 0), 12); }},
+  {at:0.9,  fn:() => SFX.tick()},
+  {at:4.6,  fn:(s) => { SFX.pop(); emit("spark", new THREE.Vector3(0, s.top + 0.05, 0), 16); }},
+  {at:5.5,  fn:(s) => { SFX.pop(); emit("spark", new THREE.Vector3(0, s.top, 0), 10); }},
+  {at:7.85, fn:(s) => { SFX.chime(); emit("spark", new THREE.Vector3(0, s.top + 0.4, 0.5), 30, 3.5); }}
+];
+
 // ---------- controls ----------
-let stage = 0, p = 0, target = 1, soundOn = true;
+let stage = 0, p = 0, target = 1;
 const $ = id => document.getElementById(id);
 const dotsEl = $("dots");
 STAGES.forEach((s, i) => {
@@ -333,7 +840,6 @@ STAGES.forEach((s, i) => {
   d.onclick = () => go(i);
   dotsEl.appendChild(d);
 });
-
 function speak(){
   if (!soundOn || !("speechSynthesis" in window)) return;
   try {
@@ -343,44 +849,126 @@ function speak(){
     speechSynthesis.speak(u);
   } catch (e) {}
 }
+function bump(el){ el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
+let lastSeason = "";
 function show(){
-  $("emoji").textContent = STAGES[stage].e;
-  $("words").textContent = STAGES[stage].t;
+  const s = STAGES[stage];
+  $("emoji").textContent = s.e; bump($("emoji"));
+  $("words").textContent = s.t;
+  if (s.s !== lastSeason){ $("season").textContent = s.s; bump($("season")); lastSeason = s.s; }
   [...dotsEl.children].forEach((d, i) => d.classList.toggle("on", i === stage));
   $("back").disabled = stage === 0;
   $("next").textContent = stage === STAGES.length - 1 ? "Again 🔁" : "Next ▶";
 }
-function go(i){
-  stage = i; target = i + 1;
-  show(); speak();
-}
+function go(i){ stage = i; target = i + 1; audio(); show(); speak(); }
 $("next").onclick = () => {
-  if (stage === STAGES.length - 1){ p = 0; go(0); }
-  else go(stage + 1);
+  if (stage === STAGES.length - 1){
+    const fl = $("flash"); fl.classList.remove("go"); void fl.offsetWidth; fl.classList.add("go");
+    setTimeout(() => {
+      p = 0; prevP = 0; yawTarget = 0; clearDropped();
+      tapFlowers.forEach(f => scene.remove(f)); tapFlowers.length = 0;
+      go(0);
+    }, 270);
+  } else go(stage + 1);
 };
 $("back").onclick = () => { if (stage > 0) go(stage - 1); };
 $("sound").onclick = () => {
   soundOn = !soundOn;
   $("sound").textContent = soundOn ? "🔊" : "🔇";
   $("sound").setAttribute("aria-pressed", String(soundOn));
-  if (soundOn) speak(); else if ("speechSynthesis" in window) speechSynthesis.cancel();
+  if (soundOn){ audio(); speak(); } else if ("speechSynthesis" in window) speechSynthesis.cancel();
 };
 document.addEventListener("keydown", e => {
   if (e.key === "ArrowRight") $("next").click();
   if (e.key === "ArrowLeft") $("back").click();
 });
+
+// drag to look around, tap to play
+const canvas = renderer.domElement;
+const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
+let down = null;
+canvas.addEventListener("pointerdown", e => { down = {x:e.clientX, y:e.clientY, yaw:yawTarget, moved:false}; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener("pointermove", e => {
+  if (!down) return;
+  const dx = e.clientX - down.x;
+  if (Math.abs(dx) > 6) down.moved = true;
+  if (down.moved) yawTarget = clamp(down.yaw - dx * 0.005, -0.7, 0.7);
+});
+canvas.addEventListener("pointerup", e => {
+  if (down && !down.moved) tap(e);
+  down = null;
+});
+canvas.addEventListener("pointercancel", () => { down = null; });
+const tappables = [squirrel, canopy, stem, ...leaves, sun, acorn, worm, grass];
+let lastState = {top:0, cs:0};
+function tap(e){
+  audio();
+  $("hint").classList.add("gone");
+  const rect = canvas.getBoundingClientRect();
+  ptr.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+  ray.setFromCamera(ptr, camera);
+  const hits = ray.intersectObjects(tappables, true).filter(h => shown(h.object));
+  if (!hits.length) return;
+  let o = hits[0].object;
+  while (o && !o.userData.kind) o = o.parent;
+  if (!o) return;
+  const pt = hits[0].point;
+  switch (o.userData.kind){
+    case "squirrel": fx.squirrelJump = 1; SFX.squeak(); break;
+    case "tree":
+      fx.treeJiggle = 1; SFX.rustle();
+      if (lastState.cs > 0.2) emit("leaf", pt, 10, 1.5);
+      if (p > 7.9) dropAcorn();
+      break;
+    case "sun": fx.sunSpin = 1; SFX.sun(); emit("spark", pt, 10, 1); break;
+    case "acorn": fx.acornWobble = 1; SFX.boop(); break;
+    case "worm": fx.wormWiggle = 1; SFX.boing(); break;
+    case "grass":
+      if (pt.y > -0.05 && pt.z > -8){
+        const fl = makeFlower(flowerCols[Math.floor(Math.random() * flowerCols.length)]);
+        fl.position.set(pt.x, 0, pt.z); fl.rotation.y = Math.random() * 6;
+        fl.userData.age = 0; fl.scale.setScalar(0.001);
+        scene.add(fl); tapFlowers.push(fl);
+        if (tapFlowers.length > 40) scene.remove(tapFlowers.shift());
+        SFX.pop(); emit("spark", new THREE.Vector3(pt.x, 0.25, pt.z), 6);
+      }
+      break;
+  }
+}
+
 show();
 
 // ---------- loop ----------
 const clock = new THREE.Clock();
-let t = 0;
+let t = 0, prevP = 0, ready = false, digTimer = 0, dropTimer = 0;
 function loop(){
   const dt = Math.min(clock.getDelta(), 0.05);
   t += dt;
-  const diff = target - p;
-  p += clamp(diff, -dt * 0.6, dt * 0.6);
-  clouds.forEach((c, i) => { c.position.x += dt * (0.15 + i * 0.05); if (c.position.x > 16) c.position.x = -16; });
-  update(p, t);
+  p += clamp(target - p, -dt * 0.55, dt * 0.55);
+  for (const k in fx) fx[k] = Math.max(0, fx[k] - dt * 1.4);
+
+  const state = update(p, t, dt);
+  lastState = state;
+
+  if (p > prevP) BEATS.forEach(b => { if (prevP < b.at && p >= b.at) b.fn(state); });
+
+  // squirrel digging
+  if (p > 1.38 && p < 1.85 && Math.abs(target - p) > 0.001){
+    digTimer -= dt;
+    if (digTimer <= 0){ digTimer = 0.18; emit("dirt", new THREE.Vector3(0.4, 0.1, 0.2), 4); SFX.dig(); }
+  }
+  // acorns keep dropping from the big oak
+  if (p > 7.95){
+    dropTimer -= dt;
+    if (dropTimer <= 0){ dropTimer = 2.6 + Math.random() * 1.5; dropAcorn(); }
+  } else if (dropped.length && p < 7.6) clearDropped();
+  prevP = p;
+
+  stepParts(dt);
+
+  const settled = Math.abs(target - p) < 0.001;
+  if (settled !== ready){ ready = settled; $("next").classList.toggle("ready", ready); }
+
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
 }
